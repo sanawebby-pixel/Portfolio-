@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfolio of Sana Mushtaq, a motivated Computer Engineering student at UET Taxila, passionate about programming, software development, emerging technologies, and creative digital experiences.">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="Sana Mushtaq | Computer Engineering Student & Web Developer">
+    <meta property="og:description" content="Portfolio of Sana Mushtaq, Computer Engineering Student at UET Taxila.">
+    <meta property="og:type" content="website">
+    
+    <title>Sana Mushtaq | Computer Engineering Student & Web Developer</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>SM</text></svg>">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <!-- Particle Background -->
+    <div id="tsparticles"></div>
+
+    <!-- Navigation -->
+    <header class="navbar" id="navbar">
+        <nav class="nav-container">
+            <a href="#home" class="logo">SM</a>
+            <ul class="nav-links">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#skills" class="nav-link">Skills</a></li>
+                <li><a href="#education" class="nav-link">Education</a></li>
+                <li><a href="#societies" class="nav-link">Societies</a></li>
+                <li><a href="#build" class="nav-link">What I Build</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="container hero-container">
+                <div class="hero-content reveal">
+                    <h2 class="greeting">Hello, I am</h2>
+                    <h1 class="name">SANA MUSHTAQ</h1>
+                    <h3 class="titles">
+                        <span class="title-item">Computer Engineering Student</span>
+                        <span class="title-divider">|</span>
+                        <span class="title-item">Web Developer</span>
+                        <span class="title-divider">|</span>
+                        <span class="title-item">Creative Technologist</span>
+                    </h3>
+                    <p class="intro">
+                        Motivated Computer Engineering student passionate about programming, software development, emerging technologies, and creative digital experiences.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#skills" class="btn btn-primary magnetic-btn">VIEW MY SKILLS</a>
+                        <a href="#contact" class="btn btn-outline magnetic-btn">LET'S CONNECT</a>
+                        <a href="https://www.linkedin.com/in/sana-mushtaq-0538a72b5" target="_blank" rel="noopener noreferrer" class="social-icon magnetic-btn" aria-label="LinkedIn">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-image reveal-right">
+                    <div class="image-wrapper">
+                        <div class="glow-circle"></div>
+                        <img src="assets/profile.png" alt="Sana Mushtaq Professional Portrait" class="profile-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">01 — ABOUT ME</h2>
+                    <h3 class="section-title">Turning Curiosity Into Code</h3>
+                </div>
+                
+                <div class="about-content">
+                    <p class="about-text reveal">
+                        I am a Computer Engineering student at University of Engineering & Technology Taxila, currently in the 2nd semester, interested in programming, software development and emerging technologies, with a strong willingness to learn and grow professionally.
+                    </p>
+                    
+                    <div class="info-cards reveal-stagger">
+                        <div class="glass-card info-card">
+                            <i class="fas fa-laptop-code card-icon"></i>
+                            <h4>Major</h4>
+                            <p>Computer Engineering</p>
+                        </div>
+                        <div class="glass-card info-card">
+                            <i class="fas fa-calendar-alt card-icon"></i>
+                            <h4>Status</h4>
+                            <p>2nd Semester</p>
+                        </div>
+                        <div class="glass-card info-card">
+                            <i class="fas fa-university card-icon"></i>
+                            <h4>University</h4>
+                            <p>UET Taxila</p>
+                        </div>
+                        <div class="glass-card info-card">
+                            <i class="fas fa-graduation-cap card-icon"></i>
+                            <h4>Academic</h4>
+                            <p>GPA 3.0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section id="skills" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">02 — SKILLS</h2>
+                    <h3 class="section-title">My Toolkit</h3>
+                </div>
+                
+                <div class="skills-filter reveal">
+                    <button class="filter-btn active" data-filter="all">ALL</button>
+                    <button class="filter-btn" data-filter="programming">PROGRAMMING</button>
+                    <button class="filter-btn" data-filter="web">WEB</button>
+                    <button class="filter-btn" data-filter="design">DESIGN</button>
+                    <button class="filter-btn" data-filter="productivity">PRODUCTIVITY</button>
+                    <button class="filter-btn" data-filter="other">OTHER</button>
+                </div>
+                
+                <div class="skills-grid reveal-stagger" id="skills-grid">
+                    <!-- Programming -->
+                    <div class="glass-card skill-card" data-category="programming">
+                        <i class="fas fa-code skill-icon"></i>
+                        <h4>C++</h4>
+                        <p>Core Programming</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="programming">
+                        <i class="fab fa-java skill-icon"></i>
+                        <h4>Java</h4>
+                        <p>Object-Oriented</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="programming">
+                        <i class="fab fa-python skill-icon"></i>
+                        <h4>Python</h4>
+                        <p>Currently Learning</p>
+                    </div>
+                    
+                    <!-- Web -->
+                    <div class="glass-card skill-card" data-category="web">
+                        <i class="fab fa-html5 skill-icon"></i>
+                        <h4>HTML</h4>
+                        <p>Web Structure</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="web">
+                        <i class="fas fa-globe skill-icon"></i>
+                        <h4>Website Development</h4>
+                        <p>End-to-end</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="web">
+                        <i class="fas fa-laptop skill-icon"></i>
+                        <h4>Web Development</h4>
+                        <p>Modern Practices</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="web">
+                        <i class="fas fa-robot skill-icon"></i>
+                        <h4>Chatbot Development</h4>
+                        <p>AI Integration</p>
+                    </div>
+                    
+                    <!-- Design -->
+                    <div class="glass-card skill-card" data-category="design">
+                        <i class="fas fa-paint-brush skill-icon"></i>
+                        <h4>Graphic Designing</h4>
+                        <p>Visual Creation</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="design">
+                        <i class="fas fa-object-group skill-icon"></i>
+                        <h4>UI/UX Design</h4>
+                        <p>Course in Progress</p>
+                    </div>
+                    
+                    <!-- Productivity -->
+                    <div class="glass-card skill-card" data-category="productivity">
+                        <i class="fab fa-microsoft skill-icon"></i>
+                        <h4>Microsoft Office</h4>
+                        <p>Suite</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="productivity">
+                        <i class="fas fa-file-excel skill-icon"></i>
+                        <h4>Excel</h4>
+                        <p>Data Management</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="productivity">
+                        <i class="fas fa-file-word skill-icon"></i>
+                        <h4>Word</h4>
+                        <p>Documentation</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="productivity">
+                        <i class="fas fa-file-powerpoint skill-icon"></i>
+                        <h4>PowerPoint</h4>
+                        <p>Presentations</p>
+                    </div>
+                    
+                    <!-- Other -->
+                    <div class="glass-card skill-card" data-category="other">
+                        <i class="fas fa-microchip skill-icon"></i>
+                        <h4>Computer Hardware</h4>
+                        <p>Systems</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="other">
+                        <i class="fas fa-lightbulb skill-icon"></i>
+                        <h4>Problem-solving Capabilities</h4>
+                        <p>Analytical</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="other">
+                        <i class="fas fa-comments skill-icon"></i>
+                        <h4>Exceptional Communication</h4>
+                        <p>Interpersonal</p>
+                    </div>
+                    <div class="glass-card skill-card" data-category="other">
+                        <i class="fas fa-chart-line skill-icon"></i>
+                        <h4>Cashflow Planning & Management</h4>
+                        <p>Financial</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education Section -->
+        <section id="education" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">03 — EDUCATION</h2>
+                    <h3 class="section-title">Academic Journey</h3>
+                </div>
+                
+                <div class="timeline reveal">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content glass-card">
+                            <span class="timeline-date">CURRENT EDUCATION</span>
+                            <h4>Computer Engineering</h4>
+                            <h5>University of Engineering & Technology Taxila</h5>
+                            <p>2nd Semester</p>
+                            <p class="highlight">GPA: 3.0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content glass-card">
+                            <span class="timeline-date">FCS</span>
+                            <h4>FG Post Graduate College for Women's</h4>
+                            <p class="highlight">75%</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content glass-card">
+                            <span class="timeline-date">MATRIC</span>
+                            <h4>Sir Syed College Wah Cantt</h4>
+                            <p class="highlight">90%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Scholarship Section -->
+        <section id="scholarship" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">04 — SCHOLARSHIP</h2>
+                    <h3 class="section-title">Academic Excellence</h3>
+                </div>
+                
+                <div class="scholarship-card glass-card premium-glow reveal">
+                    <div class="scholarship-icon">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <div class="scholarship-info">
+                        <h4>CM HONHAAR SCHOLARSHIP</h4>
+                        <p>"Awarded the CM Honhaar Scholarship for academic performance during Bachelor of Engineering studies."</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Societies Section -->
+        <section id="societies" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">05 — SOCIETIES & COMMUNITY</h2>
+                    <h3 class="section-title">Extracurricular Engagement</h3>
+                </div>
+                
+                <div class="societies-grid reveal-stagger">
+                    <div class="glass-card society-card tilt-card">
+                        <div class="society-icon"><i class="fas fa-dove"></i></div>
+                        <h4>Young Peace and Development Corp</h4>
+                        <span class="role">General Member</span>
+                        <p>Team Training and Development and Graphics</p>
+                    </div>
+                    
+                    <div class="glass-card society-card tilt-card">
+                        <div class="society-icon"><i class="fas fa-brain"></i></div>
+                        <h4>Artificial Intelligence Research & Development</h4>
+                        <span class="role">General Member</span>
+                        <p>Team Management and ML/R&D</p>
+                    </div>
+                    
+                    <div class="glass-card society-card tilt-card">
+                        <div class="society-icon"><i class="fas fa-sun"></i></div>
+                        <h4>UMEED E SUBH</h4>
+                        <span class="role">General Member</span>
+                        <p>Team Media and Graphics</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- What I Build Section -->
+        <section id="build" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">06 — WHAT I BUILD</h2>
+                    <h3 class="section-title">Capabilities & Interests</h3>
+                </div>
+                
+                <div class="build-grid reveal-stagger">
+                    <div class="glass-card build-card">
+                        <i class="fas fa-code"></i>
+                        <h4>Programming</h4>
+                    </div>
+                    <div class="glass-card build-card">
+                        <i class="fas fa-window-maximize"></i>
+                        <h4>Website Development</h4>
+                    </div>
+                    <div class="glass-card build-card">
+                        <i class="fas fa-globe"></i>
+                        <h4>Web Development</h4>
+                    </div>
+                    <div class="glass-card build-card">
+                        <i class="fas fa-robot"></i>
+                        <h4>Chatbot Development</h4>
+                    </div>
+                    <div class="glass-card build-card">
+                        <i class="fas fa-pen-nib"></i>
+                        <h4>Graphic Designing</h4>
+                    </div>
+                    <div class="glass-card build-card">
+                        <i class="fas fa-layer-group"></i>
+                        <h4>UI/UX Design</h4>
+                    </div>
+                </div>
+                
+                <div class="coming-soon reveal">
+                    <div class="coming-soon-content">
+                        <div class="loading-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <p>More projects are coming...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <h2 class="section-heading">07 — LET'S CONNECT</h2>
+                    <h3 class="section-title">Have an idea? Let's turn it into something digital.</h3>
+                </div>
+                
+                <div class="contact-container reveal">
+                    <div class="contact-info glass-card">
+                        <h4>Contact Information</h4>
+                        <ul class="contact-list">
+                            <li>
+                                <i class="fas fa-envelope"></i>
+                                <span>sanamushtaq4911@gmail.com</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-phone"></i>
+                                <span>03235676327</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Wah Cantt</span>
+                            </li>
+                        </ul>
+                        <div class="contact-buttons">
+                            <a href="mailto:sanamushtaq4911@gmail.com" class="btn btn-primary magnetic-btn">EMAIL ME</a>
+                            <a href="https://www.linkedin.com/in/sana-mushtaq-0538a72b5" target="_blank" rel="noopener noreferrer" class="btn btn-outline magnetic-btn">LINKEDIN</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-form-container glass-card">
+                        <form id="contact-form" class="contact-form" novalidate>
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" id="name" name="name" required placeholder="Your Name">
+                                <span class="error-msg">Please enter your name.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email" required placeholder="Your Email">
+                                <span class="error-msg">Please enter a valid email address.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="message">Message</label>
+                                <textarea id="message" name="message" rows="5" required placeholder="Your Message"></textarea>
+                                <span class="error-msg">Please enter your message.</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary submit-btn magnetic-btn">
+                                <span>SEND MESSAGE</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            <div class="form-success">Message simulated successfully!</div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-container">
+            <div class="footer-info">
+                <h2>SANA MUSHTAQ</h2>
+                <p>Computer Engineering Student | Web Developer</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://www.linkedin.com/in/sana-mushtaq-0538a72b5" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a href="mailto:sanamushtaq4911@gmail.com">Email</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="current-year">2026</span> Sana Mushtaq</p>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" class="scroll-to-top magnetic-btn" aria-label="Scroll to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- tsParticles script -->
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@3.5.0/tsparticles.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="script.js"></script>
+</body>
+</html>
