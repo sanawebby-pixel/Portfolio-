@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Medical Record</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">Edit Medical Record</h2>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{ form.as_p }}
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <a href="{% url 'dashboard' %}" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Cancel</a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

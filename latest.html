@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welfare Medical Expense & Employee Record System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out, width 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex h-screen overflow-hidden">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 ease-in-out bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <i data-lucide="check-circle" class="text-emerald-400 w-5 h-5"></i>
+        <span id="toast-msg" class="text-sm font-medium">Operation completed</span>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-20 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-slate-900 text-slate-300 flex flex-col justify-between sidebar-transition -translate-x-full md:translate-x-0 border-r border-slate-800">
+        <div>
+            <!-- Header -->
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-600 rounded-lg text-white">
+                        <i data-lucide="heart-pulse" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-white text-sm leading-tight">Welfare MedRec</h1>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">IndexedDB Engine</p>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="p-4 space-y-1">
+                <button onclick="switchTab('dashboard')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 text-white bg-blue-600/20 text-blue-400" id="nav-dashboard">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                </button>
+                <button onclick="switchTab('employees')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400" id="nav-employees">
+                    <i data-lucide="users" class="w-4 h-4"></i> Employees
+                </button>
+                <button onclick="openAddEmployeeModal()" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Add Employee
+                </button>
+                <button onclick="switchTab('records')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400" id="nav-records">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Medical Records
+                </button>
+                <button onclick="openAddRecordModal()" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Medical Record
+                </button>
+                <button onclick="switchTab('bills')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400" id="nav-bills">
+                    <i data-lucide="receipt" class="w-4 h-4"></i> Bills & Expenses
+                </button>
+                <button onclick="switchTab('reports')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400" id="nav-reports">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports
+                </button>
+            </nav>
+        </div>
+
+        <!-- Footer / DB Status -->
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500">
+            <p class="font-semibold text-slate-400">Factory Welfare Dept.</p>
+            <p class="flex items-center gap-1.5 text-emerald-400 mt-1"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> DB Live & Persistent</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- Navbar -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 z-10">
+            <div class="flex items-center gap-4 flex-1 max-w-xl">
+                <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                
+                <div class="relative w-full">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Quick search PL Number (e.g., PL-10001), Employee Name..." class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:border-blue-500 transition-all">
+                    <div id="search-results" class="hidden absolute left-0 right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50 p-2 space-y-1"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-semibold text-slate-700">Welfare Officer</p>
+                    <p class="text-[10px] text-slate-400">IndexedDB Connected</p>
+                </div>
+                <div class="w-9 h-9 bg-slate-800 text-white rounded-full flex items-center justify-center font-bold text-xs">
+                    WO
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic View Container -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6" id="main-container">
+            
+            <!-- Dashboard View -->
+            <section id="view-dashboard" class="space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Welfare Overview</h2>
+                        <p class="text-xs text-slate-500">Real-time stats from Browser Database</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openAddRecordModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm transition">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Medical Record
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Total Employees</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="stat-total-emp">0</h3>
+                        </div>
+                        <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Total Expenses</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="stat-total-exp">Rs. 0</h3>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                            <i data-lucide="wallet" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Total Bills Processed</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="stat-total-bills">0</h3>
+                        </div>
+                        <div class="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
+                            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Avg. Cost / Record</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="stat-avg-exp">Rs. 0</h3>
+                        </div>
+                        <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+                            <i data-lucide="calculator" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="text-sm font-semibold text-slate-800 mb-4">Monthly Expenses (Rs.)</h4>
+                        <div class="h-64">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="text-sm font-semibold text-slate-800 mb-4">Expense Category Breakdown</h4>
+                        <div class="h-64">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Medical Records -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                        <h4 class="text-sm font-semibold text-slate-800">Recent Medical Treatments</h4>
+                        <button onclick="switchTab('records')" class="text-xs text-blue-600 font-medium hover:underline">View All</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                                    <th class="p-3 pl-5">Date</th>
+                                    <th class="p-3">Employee</th>
+                                    <th class="p-3">PL Number</th>
+                                    <th class="p-3">Hospital / Doctor</th>
+                                    <th class="p-3">Total Expense</th>
+                                    <th class="p-3 pr-5 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-records-table" class="text-xs divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employees View -->
+            <section id="view-employees" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Employees Directory</h2>
+                        <p class="text-xs text-slate-500">Manage plant personnel medical profiles</p>
+                    </div>
+                    <button onclick="openAddEmployeeModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Add Employee
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-3 justify-between">
+                        <input type="text" id="emp-filter-search" oninput="renderEmployeesTable()" placeholder="Filter by PL Number, Name, Department..." class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs w-full sm:w-72 focus:outline-none focus:border-blue-500">
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                                    <th class="p-3">PL Number</th>
+                                    <th class="p-3">Employee Name</th>
+                                    <th class="p-3">Department</th>
+                                    <th class="p-3">Designation</th>
+                                    <th class="p-3">Total Visits</th>
+                                    <th class="p-3">Total Expense</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table" class="text-xs divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employee Profile View -->
+            <section id="view-employee-profile" class="hidden space-y-6">
+                <div id="profile-content"></div>
+            </section>
+
+            <!-- Medical Records View -->
+            <section id="view-records" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">All Medical Records</h2>
+                        <p class="text-xs text-slate-500">Complete listing of medical entries</p>
+                    </div>
+                    <button onclick="openAddRecordModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Record
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                                    <th class="p-3">Bill #</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">PL Number</th>
+                                    <th class="p-3">Employee</th>
+                                    <th class="p-3">Hospital/Clinic</th>
+                                    <th class="p-3">Total Expense</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="records-table" class="text-xs divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bills View -->
+            <section id="view-bills" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Bills & Itemized Expenses</h2>
+                        <p class="text-xs text-slate-500">Breakdown of fees, medicine, lab, and admission costs</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                                    <th class="p-3">Bill #</th>
+                                    <th class="p-3">PL Number</th>
+                                    <th class="p-3">Doctor Fee</th>
+                                    <th class="p-3">Lab Charges</th>
+                                    <th class="p-3">Medicine</th>
+                                    <th class="p-3">Admission</th>
+                                    <th class="p-3">Other</th>
+                                    <th class="p-3">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bills-table" class="text-xs divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports View -->
+            <section id="view-reports" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Welfare Reports</h2>
+                    <p class="text-xs text-slate-500">Filter expenses by department or timeframe</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-800">Department Expense Summary</h3>
+                        <div id="dept-report-list" class="space-y-2 text-xs"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 md:col-span-2">
+                        <h3 class="text-sm font-semibold text-slate-800">Hospital Breakdown</h3>
+                        <div id="hospital-report-list" class="space-y-2 text-xs"></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ADD/EDIT EMPLOYEE MODAL -->
+    <div id="modal-employee" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-900 text-sm">Add New Employee</h3>
+                <button onclick="closeModal('modal-employee')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-employee" onsubmit="saveEmployee(event)" class="p-6 space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">PL Number *</label>
+                    <input type="text" id="emp-pl" required placeholder="PL-10020" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Employee Name *</label>
+                    <input type="text" id="emp-name" required placeholder="Muhammad Bilal" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Father/Guardian Name</label>
+                    <input type="text" id="emp-father" placeholder="Tariq Mahmood" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Department *</label>
+                        <select id="emp-dept" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="Mechanical Assembly">Mechanical Assembly</option>
+                            <option value="Electrical Engineering">Electrical Engineering</option>
+                            <option value="Quality Assurance">Quality Assurance</option>
+                            <option value="Human Resources">Human Resources</option>
+                            <option value="Logistics & Stores">Logistics & Stores</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Designation</label>
+                        <input type="text" id="emp-designation" placeholder="Technician" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-employee')" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Save to DB</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT MEDICAL RECORD MODAL -->
+    <div id="modal-record" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-900 text-sm" id="modal-record-title">Add Medical Record & Expense Entry</h3>
+                <button onclick="closeModal('modal-record')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-record" onsubmit="saveMedicalRecord(event)" class="p-6 space-y-4 text-xs overflow-y-auto">
+                <input type="hidden" id="rec-id" value="">
+                
+                <div class="p-3 bg-slate-50 border rounded-xl space-y-2">
+                    <label class="block font-semibold text-slate-800">Select Employee *</label>
+                    <select id="rec-emp-id" required onchange="populateRecordEmpDetails(this.value)" class="w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:border-blue-500">
+                        <option value="">-- Choose Employee by PL Number / Name --</option>
+                    </select>
+                    <div id="rec-emp-details-preview" class="text-[11px] text-slate-500 hidden pt-1"></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Treatment Date *</label>
+                        <input type="date" id="rec-date" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Hospital / Clinic *</label>
+                        <input type="text" id="rec-hospital" required placeholder="Shifa Hospital" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Attending Doctor</label>
+                        <input type="text" id="rec-doctor" placeholder="Dr. Khan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Diagnosis / Reason for Visit</label>
+                    <input type="text" id="rec-diagnosis" placeholder="Routine Checkup / Lab tests / Fever" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="p-3 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
+                    <p class="font-semibold text-blue-900">Expense Calculation (Rs.)</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Doctor Fee</label>
+                            <input type="number" id="exp-doctor" value="0" min="0" oninput="calculateTotalRecordExpense()" class="exp-input w-full px-2 py-1.5 border rounded bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Lab/Tests</label>
+                            <input type="number" id="exp-lab" value="0" min="0" oninput="calculateTotalRecordExpense()" class="exp-input w-full px-2 py-1.5 border rounded bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Medicine</label>
+                            <input type="number" id="exp-medicine" value="0" min="0" oninput="calculateTotalRecordExpense()" class="exp-input w-full px-2 py-1.5 border rounded bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Admission</label>
+                            <input type="number" id="exp-admission" value="0" min="0" oninput="calculateTotalRecordExpense()" class="exp-input w-full px-2 py-1.5 border rounded bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Other</label>
+                            <input type="number" id="exp-other" value="0" min="0" oninput="calculateTotalRecordExpense()" class="exp-input w-full px-2 py-1.5 border rounded bg-white">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-blue-200">
+                        <span class="font-bold text-slate-800">TOTAL MEDICAL EXPENSE:</span>
+                        <span class="text-base font-extrabold text-blue-700" id="rec-total-display">Rs. 0</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Bill / Ref Number</label>
+                        <input type="text" id="rec-bill-no" placeholder="BILL-9901" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Status</label>
+                        <select id="rec-status" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="Paid">Paid</option>
+                            <option value="Processed">Processed</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2 border-t">
+                    <button type="button" onclick="closeModal('modal-record')" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Save to DB</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- INDEXEDDB DATABASE CONTROLLER -->
+    <script>
+        let db;
+        let monthlyChartInstance = null;
+        let categoryChartInstance = null;
+
+        // Initialize Native Browser Database (IndexedDB)
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("WelfareMedDB", 1);
+                
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains("employees")) {
+                        db.createObjectStore("employees", { keyPath: "id" });
+                    }
+                    if (!db.objectStoreNames.contains("records")) {
+                        db.createObjectStore("records", { keyPath: "id" });
+                    }
+                };
+
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    seedDefaultData().then(resolve);
+                };
+
+                request.onerror = (e) => reject("DB Open Failed");
+            });
+        }
+
+        // Seed Sample Data on First Run
+        async function seedDefaultData() {
+            const employees = await getAllData("employees");
+            if (employees.length === 0) {
+                const sampleEmps = [
+                    { id: "1", pl: "PL-10001", name: "Muhammad Ali", father: "Abdul Rehman", dept: "Mechanical Assembly", designation: "Senior Fitter", joined: "2019-03-12" },
+                    { id: "2", pl: "PL-10002", name: "Tariq Mahmood", father: "Ghulam Nabi", dept: "Electrical Engineering", designation: "Electrician", joined: "2020-06-15" },
+                    { id: "3", pl: "PL-10003", name: "Usman Ghani", father: "Muhammad Sharif", dept: "Quality Assurance", designation: "QA Inspector", joined: "2021-01-10" }
+                ];
+                for (let e of sampleEmps) await addData("employees", e);
+
+                const sampleRecs = [
+                    { id: "r1", empId: "1", date: "2026-08-10", hospital: "City General Hospital", doctor: "Dr. Farooq", diagnosis: "High Fever & Tests", docFee: 1500, labFee: 3000, medFee: 2000, admFee: 0, otherFee: 0, total: 6500, billNo: "INV-8801", status: "Paid" },
+                    { id: "r2", empId: "2", date: "2026-08-18", hospital: "National Health Complex", doctor: "Dr. Saleem", diagnosis: "Wrist Injury", docFee: 2000, labFee: 4500, medFee: 1500, admFee: 5000, otherFee: 1000, total: 14000, billNo: "INV-8902", status: "Processed" }
+                ];
+                for (let r of sampleRecs) await addData("records", r);
+            }
+        }
+
+        // Helper DB CRUD Operations
+        function addData(storeName, item) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, "readwrite");
+                tx.objectStore(storeName).put(item);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        function getAllData(storeName) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, "readonly");
+                const req = tx.objectStore(storeName).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        function deleteData(storeName, id) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, "readwrite");
+                tx.objectStore(storeName).delete(id);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        // Init App
+        document.addEventListener("DOMContentLoaded", async () => {
+            lucide.createIcons();
+            await initDB();
+            await refreshAllViews();
+            initCharts();
+            document.getElementById('rec-date').valueAsDate = new Date();
+        });
+
+        async function refreshAllViews() {
+            await updateDashboardStats();
+            await renderRecentRecords();
+            await renderEmployeesTable();
+            await renderRecordsTable();
+            await renderBillsTable();
+            await renderReports();
+            await populateEmpSelect();
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'employees', 'employee-profile', 'records', 'bills', 'reports'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('bg-blue-600/20', 'text-blue-400'));
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) activeNav.classList.add('bg-blue-600/20', 'text-blue-400');
+
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.add('hidden');
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => { toast.classList.add('translate-x-full'); }, 3000);
+        }
+
+        function openAddEmployeeModal() {
+            document.getElementById('form-employee').reset();
+            document.getElementById('modal-employee').classList.remove('hidden');
+        }
+
+        async function openAddRecordModal(preselectedEmpId = null) {
+            document.getElementById('form-record').reset();
+            document.getElementById('rec-id').value = ''; 
+            document.getElementById('modal-record-title').innerText = "Add Medical Record & Expense Entry";
+            await populateEmpSelect();
+            if (preselectedEmpId) {
+                document.getElementById('rec-emp-id').value = preselectedEmpId;
+                await populateRecordEmpDetails(preselectedEmpId);
+            } else {
+                document.getElementById('rec-emp-details-preview').classList.add('hidden');
+            }
+            document.getElementById('rec-date').valueAsDate = new Date();
+            calculateTotalRecordExpense();
+            document.getElementById('modal-record').classList.remove('hidden');
+        }
+
+        async function openEditRecordModal(recId) {
+            const recs = await getAllData("records");
+            const rec = recs.find(r => r.id === recId);
+            if (!rec) return;
+
+            document.getElementById('form-record').reset();
+            await populateEmpSelect();
+
+            document.getElementById('rec-id').value = rec.id;
+            document.getElementById('modal-record-title').innerText = "Edit Medical Record & Expense Entry";
+            document.getElementById('rec-emp-id').value = rec.empId;
+            await populateRecordEmpDetails(rec.empId);
+
+            document.getElementById('rec-date').value = rec.date;
+            document.getElementById('rec-hospital').value = rec.hospital || '';
+            document.getElementById('rec-doctor').value = rec.doctor || '';
+            document.getElementById('rec-diagnosis').value = rec.diagnosis || '';
+
+            document.getElementById('exp-doctor').value = rec.docFee || 0;
+            document.getElementById('exp-lab').value = rec.labFee || 0;
+            document.getElementById('exp-medicine').value = rec.medFee || 0;
+            document.getElementById('exp-admission').value = rec.admFee || 0;
+            document.getElementById('exp-other').value = rec.otherFee || 0;
+
+            document.getElementById('rec-bill-no').value = rec.billNo || '';
+            document.getElementById('rec-status').value = rec.status || 'Paid';
+
+            calculateTotalRecordExpense();
+            document.getElementById('modal-record').classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function calculateTotalRecordExpense() {
+            const doc = parseFloat(document.getElementById('exp-doctor').value) || 0;
+            const lab = parseFloat(document.getElementById('exp-lab').value) || 0;
+            const med = parseFloat(document.getElementById('exp-medicine').value) || 0;
+            const adm = parseFloat(document.getElementById('exp-admission').value) || 0;
+            const oth = parseFloat(document.getElementById('exp-other').value) || 0;
+            const total = doc + lab + med + adm + oth;
+            document.getElementById('rec-total-display').innerText = `Rs. ${total.toLocaleString()}`;
+            return total;
+        }
+
+        async function updateDashboardStats() {
+            const emps = await getAllData("employees");
+            const recs = await getAllData("records");
+
+            const totalEmp = emps.length;
+            const totalBills = recs.length;
+            const totalExp = recs.reduce((sum, r) => sum + (r.total || 0), 0);
+            const avgExp = totalBills > 0 ? Math.round(totalExp / totalBills) : 0;
+
+            document.getElementById('stat-total-emp').innerText = totalEmp;
+            document.getElementById('stat-total-bills').innerText = totalBills;
+            document.getElementById('stat-total-exp').innerText = `Rs. ${totalExp.toLocaleString()}`;
+            document.getElementById('stat-avg-exp').innerText = `Rs. ${avgExp.toLocaleString()}`;
+        }
+
+        async function renderRecentRecords() {
+            const tbody = document.getElementById('recent-records-table');
+            tbody.innerHTML = '';
+            const recs = await getAllData("records");
+            const emps = await getAllData("employees");
+
+            recs.sort((a,b) => new Date(b.date) - new Date(a.date));
+            const recent = recs.slice(0, 5);
+
+            recent.forEach(r => {
+                const emp = emps.find(e => e.id === r.empId) || { name: 'Unknown', pl: 'N/A' };
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 pl-5 font-medium text-slate-700">${r.date}</td>
+                        <td class="p-3 font-semibold text-slate-900">${emp.name}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 border text-slate-600 rounded font-mono text-[10px]">${emp.pl}</span></td>
+                        <td class="p-3 text-slate-600">${r.hospital} <span class="text-slate-400">(${r.doctor || 'N/A'})</span></td>
+                        <td class="p-3 font-bold text-slate-800">Rs. ${r.total.toLocaleString()}</td>
+                        <td class="p-3 pr-5 text-right">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${r.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function renderEmployeesTable() {
+            const tbody = document.getElementById('employees-table');
+            const search = (document.getElementById('emp-filter-search')?.value || '').toLowerCase();
+            tbody.innerHTML = '';
+
+            let emps = await getAllData("employees");
+            const recs = await getAllData("records");
+
+            if (search) {
+                emps = emps.filter(e => e.pl.toLowerCase().includes(search) || e.name.toLowerCase().includes(search) || e.dept.toLowerCase().includes(search));
+            }
+
+            emps.forEach(e => {
+                const empRecs = recs.filter(r => r.empId === e.id);
+                const totalExpense = empRecs.reduce((sum, r) => sum + r.total, 0);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono font-semibold text-blue-600">${e.pl}</td>
+                        <td class="p-3 font-semibold text-slate-900">${e.name}</td>
+                        <td class="p-3 text-slate-600">${e.dept}</td>
+                        <td class="p-3 text-slate-500">${e.designation}</td>
+                        <td class="p-3 font-medium">${empRecs.length}</td>
+                        <td class="p-3 font-bold text-slate-800">Rs. ${totalExpense.toLocaleString()}</td>
+                        <td class="p-3 text-right space-x-2">
+                            <button onclick="viewEmployeeProfile('${e.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium text-[11px]">View History</button>
+                            <button onclick="openAddRecordModal('${e.id}')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded font-medium text-[11px]">+ Record</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function renderRecordsTable() {
+            const tbody = document.getElementById('records-table');
+            tbody.innerHTML = '';
+
+            const recs = await getAllData("records");
+            const emps = await getAllData("employees");
+
+            recs.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            recs.forEach(r => {
+                const emp = emps.find(e => e.id === r.empId) || { name: 'N/A', pl: 'N/A' };
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono text-slate-500">${r.billNo || 'N/A'}</td>
+                        <td class="p-3 text-slate-700">${r.date}</td>
+                        <td class="p-3 font-mono text-blue-600 font-semibold">${emp.pl}</td>
+                        <td class="p-3 font-medium text-slate-900">${emp.name}</td>
+                        <td class="p-3 text-slate-600">${r.hospital}</td>
+                        <td class="p-3 font-bold text-slate-900">Rs. ${r.total.toLocaleString()}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">${r.status}</span></td>
+                        <td class="p-3 text-right space-x-2">
+                            <button onclick="openEditRecordModal('${r.id}')" class="text-blue-600 hover:text-blue-800"><i data-lucide="pencil" class="w-4 h-4 inline"></i></button>
+                            <button onclick="deleteRecord('${r.id}')" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        async function renderBillsTable() {
+            const tbody = document.getElementById('bills-table');
+            tbody.innerHTML = '';
+
+            const recs = await getAllData("records");
+            const emps = await getAllData("employees");
+
+            recs.forEach(r => {
+                const emp = emps.find(e => e.id === r.empId) || { pl: 'N/A' };
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono text-slate-600">${r.billNo || 'N/A'}</td>
+                        <td class="p-3 font-mono text-blue-600">${emp.pl}</td>
+                        <td class="p-3">Rs. ${(r.docFee||0).toLocaleString()}</td>
+                        <td class="p-3">Rs. ${(r.labFee||0).toLocaleString()}</td>
+                        <td class="p-3">Rs. ${(r.medFee||0).toLocaleString()}</td>
+                        <td class="p-3">Rs. ${(r.admFee||0).toLocaleString()}</td>
+                        <td class="p-3">Rs. ${(r.otherFee||0).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-slate-900">Rs. ${r.total.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function viewEmployeeProfile(empId) {
+            const emps = await getAllData("employees");
+            const emp = emps.find(e => e.id === empId);
+            if (!emp) return;
+
+            const recs = await getAllData("records");
+            const empRecords = recs.filter(r => r.empId === emp.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const totalExp = empRecords.reduce((s, r) => s + r.total, 0);
+
+            const container = document.getElementById('profile-content');
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <span class="px-2.5 py-1 bg-blue-100 text-blue-700 font-mono font-bold text-xs rounded-md">${emp.pl}</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-1">${emp.name}</h2>
+                            <p class="text-xs text-slate-500">${emp.designation} &bull; ${emp.dept}</p>
+                        </div>
+                        <button onclick="openAddRecordModal('${emp.id}')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 self-start sm:self-auto">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Treatment Record
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                        <div class="bg-slate-50 p-3 rounded-lg border">
+                            <p class="text-slate-400">Father/Guardian</p>
+                            <p class="font-semibold text-slate-700 mt-0.5">${emp.father || 'N/A'}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border">
+                            <p class="text-slate-400">Total Medical Visits</p>
+                            <p class="font-semibold text-slate-700 mt-0.5">${empRecords.length} visits</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border">
+                            <p class="text-slate-400">Total Expense Incurred</p>
+                            <p class="font-bold text-blue-600 mt-0.5">Rs. ${totalExp.toLocaleString()}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border">
+                            <p class="text-slate-400">Date Joined</p>
+                            <p class="font-semibold text-slate-700 mt-0.5">${emp.joined || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-5 space-y-4">
+                    <h3 class="font-bold text-slate-800 text-sm">Medical Treatment & Expense History</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b uppercase text-[10px] text-slate-500">
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Hospital / Doctor</th>
+                                    <th class="p-3">Diagnosis</th>
+                                    <th class="p-3">Itemized (Doc/Lab/Med)</th>
+                                    <th class="p-3">Total</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${empRecords.length === 0 ? '<tr><td colspan="6" class="p-4 text-center text-slate-400">No medical history for this employee.</td></tr>' : ''}
+                                ${empRecords.map(r => `
+                                    <tr>
+                                        <td class="p-3 font-medium text-slate-700">${r.date}</td>
+                                        <td class="p-3"><strong>${r.hospital}</strong><br><span class="text-slate-400">${r.doctor || ''}</span></td>
+                                        <td class="p-3 text-slate-600">${r.diagnosis || 'N/A'}</td>
+                                        <td class="p-3 text-slate-500">Rs. ${r.docFee||0} / Rs. ${r.labFee||0} / Rs. ${r.medFee||0}</td>
+                                        <td class="p-3 font-bold text-slate-900">Rs. ${r.total.toLocaleString()}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700">${r.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            switchTab('employee-profile');
+        }
+
+        async function saveEmployee(e) {
+            e.preventDefault();
+            const newEmp = {
+                id: Date.now().toString(),
+                pl: document.getElementById('emp-pl').value.trim(),
+                name: document.getElementById('emp-name').value.trim(),
+                father: document.getElementById('emp-father').value.trim(),
+                dept: document.getElementById('emp-dept').value,
+                designation: document.getElementById('emp-designation').value.trim(),
+                joined: new Date().toISOString().split('T')[0]
+            };
+
+            await addData("employees", newEmp);
+            await refreshAllViews();
+            closeModal('modal-employee');
+            showToast(`Employee ${newEmp.pl} saved in Database.`);
+        }
+
+        async function saveMedicalRecord(e) {
+            e.preventDefault();
+            const existingId = document.getElementById('rec-id').value;
+            const recId = existingId ? existingId : ('r_' + Date.now());
+
+            const docFee = parseFloat(document.getElementById('exp-doctor').value) || 0;
+            const labFee = parseFloat(document.getElementById('exp-lab').value) || 0;
+            const medFee = parseFloat(document.getElementById('exp-medicine').value) || 0;
+            const admFee = parseFloat(document.getElementById('exp-admission').value) || 0;
+            const otherFee = parseFloat(document.getElementById('exp-other').value) || 0;
+
+            const recordData = {
+                id: recId,
+                empId: document.getElementById('rec-emp-id').value,
+                date: document.getElementById('rec-date').value,
+                hospital: document.getElementById('rec-hospital').value.trim(),
+                doctor: document.getElementById('rec-doctor').value.trim(),
+                diagnosis: document.getElementById('rec-diagnosis').value.trim(),
+                docFee, labFee, medFee, admFee, otherFee,
+                total: docFee + labFee + medFee + admFee + otherFee,
+                billNo: document.getElementById('rec-bill-no').value.trim(),
+                status: document.getElementById('rec-status').value
+            };
+
+            await addData("records", recordData);
+            await refreshAllViews();
+            await updateCharts();
+            closeModal('modal-record');
+            showToast(existingId ? "Medical record updated successfully!" : "Medical record saved successfully!");
+        }
+
+        async function deleteRecord(recId) {
+            if (confirm("Are you sure you want to delete this record?")) {
+                await deleteData("records", recId);
+                await refreshAllViews();
+                await updateCharts();
+                showToast("Record deleted.");
+            }
+        }
+
+        async function populateEmpSelect() {
+            const select = document.getElementById('rec-emp-id');
+            select.innerHTML = '<option value="">-- Choose Employee by PL Number / Name --</option>';
+            const employees = await getAllData("employees");
+            employees.forEach(e => {
+                select.innerHTML += `<option value="${e.id}">${e.pl} - ${e.name} (${e.dept})</option>`;
+            });
+        }
+
+        async function populateRecordEmpDetails(empId) {
+            const preview = document.getElementById('rec-emp-details-preview');
+            const employees = await getAllData("employees");
+            const emp = employees.find(e => e.id === empId);
+            if (emp) {
+                preview.classList.remove('hidden');
+                preview.innerHTML = `Selected: <strong>${emp.name}</strong> | Dept: <strong>${emp.dept}</strong>`;
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+
+        async function handleGlobalSearch(query) {
+            const popup = document.getElementById('search-results');
+            const q = query.trim().toLowerCase();
+            if (!q) {
+                popup.classList.add('hidden');
+                return;
+            }
+
+            const emps = await getAllData("employees");
+            const matched = emps.filter(e => e.pl.toLowerCase().includes(q) || e.name.toLowerCase().includes(q));
+
+            if (matched.length === 0) {
+                popup.innerHTML = `<div class="p-3 text-xs text-slate-400">No matching employee found for "${query}"</div>`;
+            } else {
+                popup.innerHTML = matched.map(e => `
+                    <div onclick="viewEmployeeProfile('${e.id}'); document.getElementById('search-results').classList.add('hidden');" class="p-2.5 hover:bg-slate-50 rounded-lg cursor-pointer flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-bold text-slate-800">${e.name} <span class="font-mono text-blue-600 text-[11px]">(${e.pl})</span></p>
+                            <p class="text-[10px] text-slate-400">${e.dept}</p>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            }
+            popup.classList.remove('hidden');
+        }
+
+        async function renderReports() {
+            const deptList = document.getElementById('dept-report-list');
+            const hospList = document.getElementById('hospital-report-list');
+
+            const recs = await getAllData("records");
+            const emps = await getAllData("employees");
+
+            const deptMap = {};
+            const hospMap = {};
+
+            recs.forEach(r => {
+                const emp = emps.find(e => e.id === r.empId);
+                const dept = emp ? emp.dept : 'Other';
+                deptMap[dept] = (deptMap[dept] || 0) + r.total;
+                hospMap[r.hospital] = (hospMap[r.hospital] || 0) + r.total;
+            });
+
+            deptList.innerHTML = Object.keys(deptMap).length === 0 ? '<p class="text-slate-400">No data</p>' : '';
+            for (let d in deptMap) {
+                deptList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded border">
+                        <span class="font-medium text-slate-700">${d}</span>
+                        <span class="font-bold text-slate-900">Rs. ${deptMap[d].toLocaleString()}</span>
+                    </div>
+                `;
+            }
+
+            hospList.innerHTML = Object.keys(hospMap).length === 0 ? '<p class="text-slate-400">No data</p>' : '';
+            for (let h in hospMap) {
+                hospList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded border">
+                        <span class="font-medium text-slate-700">${h}</span>
+                        <span class="font-bold text-blue-600">Rs. ${hospMap[h].toLocaleString()}</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function initCharts() {
+            const recs = await getAllData("records");
+            const totalExp = recs.reduce((s,r) => s + r.total, 0);
+
+            const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChartInstance = new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    datasets: [{
+                        label: 'Total Expenses (Rs.)',
+                        data: [12000, 19000, 15000, 22000, 9500, totalExp],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const sums = recs.reduce((acc, r) => {
+                acc.d += r.docFee||0; acc.l += r.labFee||0; acc.m += r.medFee||0; acc.a += r.admFee||0; acc.o += r.otherFee||0;
+                return acc;
+            }, {d:0, l:0, m:0, a:0, o:0});
+
+            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+            categoryChartInstance = new Chart(ctxCategory, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Doctor Fees', 'Lab Charges', 'Medicine', 'Admission', 'Other'],
+                    datasets: [{
+                        data: [sums.d, sums.l, sums.m, sums.a, sums.o],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#64748b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        async function updateCharts() {
+            if (categoryChartInstance) {
+                const recs = await getAllData("records");
+                const sums = recs.reduce((acc, r) => {
+                    acc.d += r.docFee||0; acc.l += r.labFee||0; acc.m += r.medFee||0; acc.a += r.admFee||0; acc.o += r.otherFee||0;
+                    return acc;
+                }, {d:0, l:0, m:0, a:0, o:0});
+
+                categoryChartInstance.data.datasets[0].data = [sums.d, sums.l, sums.m, sums.a, sums.o];
+                categoryChartInstance.update();
+            }
+        }
+    </script>
+</body>
+</html>
