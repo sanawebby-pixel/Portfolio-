@@ -58,8 +58,10 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
-db.sqlite3
+# db.sqlite3 is committed so Vercel can bundle read-only data
+# db.sqlite3
 db.sqlite3-journal
+staticfiles/
 
 # Flask stuff:
 instance/
