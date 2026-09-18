@@ -1,0 +1,19 @@
+{% extends "welfare_app/base.html" %}
+{% load welfare_tags %}
+{% block title %}Employee Form{% endblock %}
+{% block breadcrumb %}
+<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2 bg-slate-50 border-b border-slate-100">
+    <a href="{% url 'dashboard' %}" class="hover:text-blue-600">Dashboard</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-700 font-medium">Employee Form</span>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="p-6">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <!-- form fields -->
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Save</button>
+    </form>
+</div>
+{% endblock %}

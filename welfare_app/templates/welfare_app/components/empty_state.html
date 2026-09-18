@@ -1,0 +1,22 @@
+<div class="text-center py-12 px-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-400 mb-4">
+        <i data-lucide="{{ icon|default:'folder-search' }}" class="w-8 h-8"></i>
+    </div>
+    <h3 class="text-lg font-medium text-slate-900">{{ title|default:"No records found" }}</h3>
+    <p class="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
+        {{ description|default:"There are no records to display matching your criteria." }}
+    </p>
+    
+    {% if action_url and action_text %}
+    <div class="mt-6">
+        <a href="{{ action_url }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            {{ action_text }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Usage:
+    {% include "welfare_app/components/empty_state.html" with icon="users" title="No Employees Found" description="Get started by adding a new employee to the system." action_url="/employees/add/" action_text="Add Employee" %}
+-->

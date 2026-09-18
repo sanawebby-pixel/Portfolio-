@@ -1,0 +1,297 @@
+{% load welfare_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Welfare ERP - Hospital & Welfare Management System{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
+
+    <!-- Mobile sidebar overlay -->
+    <div x-show="sidebarOpen" x-transition.opacity x-cloak
+         class="fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-sm md:hidden"
+         @click="sidebarOpen = false"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+           class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col justify-between transition-transform duration-300 md:translate-x-0 border-r border-slate-800 flex-shrink-0 h-full">
+        
+        <div class="flex flex-col h-full overflow-hidden">
+            <!-- Logo Area -->
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-6 h-16 bg-slate-950 border-b border-slate-800 hover:bg-slate-900/50 transition">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
+                    <i data-lucide="heart-pulse" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-sm leading-tight tracking-wide">Welfare ERP</h1>
+                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Hospital & Benefits</p>
+                </div>
+            </a>
+
+            <!-- Scrollable Nav Links -->
+            <nav class="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 custom-scrollbar">
+                
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">Main</div>
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'dashboard' %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Dashboard</span>
+                </a>
+
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">HR & Employees</div>
+                <a href="{% url 'employee_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'employees' %}">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Employee Directory</span>
+                </a>
+
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">Medical & Hospital</div>
+                <a href="{% url 'hospital_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'hospitals' %}">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Hospitals</span>
+                </a>
+                <a href="{% url 'doctor_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'doctors' %}">
+                    <i data-lucide="stethoscope" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Doctors</span>
+                </a>
+                <a href="{% url 'visit_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'visits' %}">
+                    <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Hospital Visits</span>
+                </a>
+                <a href="{% url 'claim_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'claims' %}">
+                    <i data-lucide="file-heart" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Medical Claims</span>
+                </a>
+
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">Finance & Accounts</div>
+                <a href="{% url 'bill_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'bills_expenses' %}">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Bills & Expenses</span>
+                </a>
+                <a href="{% url 'finance_dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'finance' %}">
+                    <i data-lucide="landmark" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Finance & Treasury</span>
+                </a>
+                <a href="{% url 'budget_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'budgets' %}">
+                    <i data-lucide="piggy-bank" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Budgets</span>
+                </a>
+                <a href="{% url 'approval_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'approvals' %}">
+                    <i data-lucide="check-square" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Approvals</span>
+                </a>
+
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">Inventory & Supply</div>
+                <a href="{% url 'medicine_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'medicines' %}">
+                    <i data-lucide="pill" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Medicines & Pharmacy</span>
+                </a>
+                <a href="{% url 'purchase_request_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'procurement' %}">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Procurement</span>
+                </a>
+                <a href="{% url 'supplier_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'suppliers' %}">
+                    <i data-lucide="truck" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Suppliers</span>
+                </a>
+
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pt-3 pb-1">System & Reports</div>
+                <a href="{% url 'report_index' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'reports' %}">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Reports & Analytics</span>
+                </a>
+                <a href="{% url 'user_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'users' %}">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">User & Roles</span>
+                </a>
+                <a href="{% url 'audit_log' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'audit' %}">
+                    <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Audit Logs</span>
+                </a>
+                <a href="{% url 'notification_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'notifications' %}">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Notifications</span>
+                    {% if unread_notifications_count %}
+                    <span class="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded-full">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-3 bg-slate-950 border-t border-slate-800">
+            <div class="flex items-center justify-between text-xs font-medium text-slate-400 px-2 py-1">
+                <span>Factory Welfare Dept.</span>
+                <div class="flex items-center gap-1.5" title="ERP Live & Connected">
+                    <span class="relative flex w-2 h-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full w-2 h-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[10px] text-emerald-400 font-mono">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+        
+        <!-- Top Navbar -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 z-20 flex-shrink-0">
+            <div class="flex items-center gap-4 flex-1 max-w-xl">
+                <button @click="sidebarOpen = true" class="p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100 md:hidden">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                
+                <!-- Global Search Form -->
+                <form action="{% url 'global_search' %}" method="GET" class="relative w-full">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" name="q" value="{{ request.GET.q|default:'' }}" 
+                           placeholder="Global search PL#, Employee, Hospital, Claim, Medicine..." 
+                           class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-transparent rounded-lg text-xs font-medium focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                </form>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Notifications Link -->
+                <a href="{% url 'notification_list' %}" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    {% if unread_notifications_count %}
+                    <span class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white"></span>
+                    {% endif %}
+                </a>
+
+                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+
+                <!-- User Dropdown Menu -->
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" @click.outside="open = false" 
+                            class="flex items-center gap-2.5 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 transition-colors">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-xs font-bold text-slate-800 leading-tight">{{ request.user.get_full_name|default:request.user.username }}</div>
+                            <div class="text-[10px] text-slate-400 font-semibold">{{ user_role|default:'Administrator' }}</div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                            {{ request.user.username|make_list|first|upper }}
+                        </div>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                    </button>
+
+                    <div x-show="open" x-transition.opacity x-cloak
+                         class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 overflow-hidden z-50">
+                        <div class="px-4 py-2 border-b border-slate-100 bg-slate-50">
+                            <p class="text-xs font-semibold text-slate-800">{{ request.user.get_full_name|default:request.user.username }}</p>
+                            <p class="text-[10px] text-slate-400 truncate">{{ request.user.email|default:'Welfare Officer' }}</p>
+                        </div>
+                        <a href="{% url 'change_password' %}" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                            <i data-lucide="key" class="w-3.5 h-3.5 text-slate-400"></i> Change Password
+                        </a>
+                        <div class="h-px bg-slate-100 my-1"></div>
+                        <a href="{% url 'logout' %}" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors">
+                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        {% block breadcrumb %}{% endblock %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast-message pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl shadow-xl border bg-white max-w-sm transform transition-all duration-300
+                    {% if message.tags == 'success' %}border-emerald-200 text-emerald-900 shadow-emerald-500/10
+                    {% elif message.tags == 'error' %}border-red-200 text-red-900 shadow-red-500/10
+                    {% elif message.tags == 'warning' %}border-amber-200 text-amber-900 shadow-amber-500/10
+                    {% else %}border-blue-200 text-blue-900 shadow-blue-500/10{% endif %}"
+                    role="alert">
+                    
+                    <div class="flex-shrink-0 mt-0.5">
+                        {% if message.tags == 'success' %}
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                        {% elif message.tags == 'error' %}
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-red-500"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+                        {% else %}
+                            <i data-lucide="info" class="w-4 h-4 text-blue-500"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 text-xs font-semibold pt-0.5">
+                        {{ message }}
+                    </div>
+                    <button onclick="this.closest('.toast-message').remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Initialize Lucide Icons & Toasts -->
+    <script>
+        lucide.createIcons();
+
+        // Auto-hide toasts after 4 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            const toasts = document.querySelectorAll('.toast-message');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-10px)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

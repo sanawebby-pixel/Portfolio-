@@ -1,27 +1,5 @@
 from django import forms
-
-from .models import Employee, MedicalRecord
-
-
-class EmployeeForm(forms.ModelForm):
-    class Meta:
-        model = Employee
-        fields = ['pl_number', 'name', 'father_name', 'department', 'designation', 'joined_date']
-        widgets = {
-            'pl_number': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500', 'placeholder': 'PL-10020'}),
-            'name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500', 'placeholder': 'Muhammad Bilal'}),
-            'father_name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500', 'placeholder': 'Tariq Mahmood'}),
-            'department': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500'}, choices=[
-                ('Mechanical Assembly', 'Mechanical Assembly'),
-                ('Electrical Engineering', 'Electrical Engineering'),
-                ('Quality Assurance', 'Quality Assurance'),
-                ('Human Resources', 'Human Resources'),
-                ('Logistics & Stores', 'Logistics & Stores'),
-            ]),
-            'designation': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500', 'placeholder': 'Technician'}),
-            'joined_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500'}),
-        }
-
+from welfare_app.models import MedicalRecord
 
 class MedicalRecordForm(forms.ModelForm):
     class Meta:
