@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
-    Department, Employee, Dependent, Hospital, Doctor, HospitalVisit,
-    MedicalRecord, MedicalClaim, ClaimExpenseItem, ApprovalWorkflow,
+    Department, BenefitRule, Employee, Dependent, Hospital, Doctor, HospitalVisit,
+    MedicalRecord, MedicalClaim, ClaimExpenseItem, ApprovalWorkflow, ClaimPayment,
     Bill, Budget, FinanceTransaction, Medicine, MedicineTransaction,
     Supplier, PurchaseRequest, PurchaseOrder, Document, Notification,
     AuditLog, UserProfile
@@ -24,6 +24,12 @@ class ApprovalWorkflowInline(admin.TabularInline):
     readonly_fields = ('action_date',)
 
 
+class ClaimPaymentInline(admin.TabularInline):
+    model = ClaimPayment
+    extra = 0
+    readonly_fields = ('payment_number', 'created_at')
+
+
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'is_active', 'created_at')
@@ -31,11 +37,18 @@ class DepartmentAdmin(admin.ModelAdmin):
     list_filter = ('is_active',)
 
 
+@admin.register(BenefitRule)
+class BenefitRuleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'department', 'grade_scale', 'annual_medical_limit', 'opd_consultation_limit', 'lab_coverage_percent', 'is_active')
+    search_fields = ('name', 'grade_scale')
+    list_filter = ('is_active', 'department')
+
+
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('pl_number', 'name', 'department', 'designation', 'employment_status', 'joined_date')
+    list_display = ('pl_number', 'name', 'department', 'designation', 'employment_type', 'employment_status', 'joined_date')
     search_fields = ('pl_number', 'name', 'cnic', 'email', 'contact_number')
-    list_filter = ('department', 'employment_status')
+    list_filter = ('department', 'employment_status', 'employment_type')
     inlines = [DependentInline]
 
 
@@ -48,21 +61,21 @@ class DependentAdmin(admin.ModelAdmin):
 
 @admin.register(Hospital)
 class HospitalAdmin(admin.ModelAdmin):
-    list_display = ('name', 'hospital_type', 'city', 'contact_number', 'panel_status', 'status')
-    search_fields = ('name', 'city', 'contact_number', 'email')
+    list_display = ('hospital_code', 'name', 'hospital_type', 'city', 'contact_person', 'contact_number', 'panel_status', 'status')
+    search_fields = ('hospital_code', 'name', 'city', 'contact_number', 'email')
     list_filter = ('hospital_type', 'panel_status', 'status')
 
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'specialization', 'hospital', 'contact', 'status')
+    list_display = ('name', 'specialization', 'hospital', 'consultation_fee', 'contact', 'status')
     search_fields = ('name', 'specialization', 'registration_number', 'contact')
     list_filter = ('hospital', 'status')
 
 
 @admin.register(HospitalVisit)
 class HospitalVisitAdmin(admin.ModelAdmin):
-    list_display = ('employee', 'dependent', 'hospital', 'doctor', 'visit_date', 'visit_type', 'status')
+    list_display = ('employee', 'dependent', 'hospital', 'doctor', 'visit_date', 'visit_type', 'total_visit_cost', 'status')
     search_fields = ('employee__name', 'employee__pl_number', 'diagnosis', 'hospital__name', 'doctor__name')
     list_filter = ('visit_type', 'status', 'visit_date')
     date_hierarchy = 'visit_date'
@@ -78,12 +91,20 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 
 @admin.register(MedicalClaim)
 class MedicalClaimAdmin(admin.ModelAdmin):
-    list_display = ('claim_number', 'employee', 'claim_date', 'total_bill_amount', 'eligible_amount', 'approved_amount', 'claim_status', 'payment_status')
-    search_fields = ('claim_number', 'employee__name', 'employee__pl_number', 'bill_number')
-    list_filter = ('claim_status', 'payment_status', 'claim_date')
+    list_display = ('claim_number', 'employee', 'claim_type', 'claim_date', 'total_bill_amount', 'claimable_amount', 'approved_amount', 'paid_amount', 'claim_status', 'payment_status')
+    search_fields = ('claim_number', 'employee__name', 'employee__pl_number', 'bill_number', 'diagnosis')
+    list_filter = ('claim_status', 'payment_status', 'claim_type', 'claim_date')
     date_hierarchy = 'claim_date'
-    inlines = [ClaimExpenseItemInline, ApprovalWorkflowInline]
+    inlines = [ClaimExpenseItemInline, ApprovalWorkflowInline, ClaimPaymentInline]
     readonly_fields = ('claim_number', 'created_at', 'updated_at')
+
+
+@admin.register(ClaimPayment)
+class ClaimPaymentAdmin(admin.ModelAdmin):
+    list_display = ('payment_number', 'claim', 'employee', 'payment_amount', 'payment_date', 'payment_method', 'account', 'transaction_reference')
+    search_fields = ('payment_number', 'claim__claim_number', 'employee__name', 'transaction_reference')
+    list_filter = ('payment_method', 'payment_date')
+    date_hierarchy = 'payment_date'
 
 
 @admin.register(ClaimExpenseItem)
@@ -103,9 +124,9 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
 
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):
-    list_display = ('bill_number', 'bill_date', 'hospital', 'vendor_name', 'employee', 'amount', 'status', 'payment_status')
+    list_display = ('bill_number', 'bill_date', 'category', 'hospital', 'vendor_name', 'employee', 'amount', 'status', 'payment_status')
     search_fields = ('bill_number', 'vendor_name', 'employee__name')
-    list_filter = ('status', 'payment_status', 'bill_date')
+    list_filter = ('status', 'payment_status', 'category', 'bill_date')
     date_hierarchy = 'bill_date'
 
 
@@ -118,24 +139,24 @@ class BudgetAdmin(admin.ModelAdmin):
 
 @admin.register(FinanceTransaction)
 class FinanceTransactionAdmin(admin.ModelAdmin):
-    list_display = ('transaction_type', 'amount', 'category', 'reference_number', 'payment_method', 'date', 'created_by')
-    search_fields = ('reference_number', 'category', 'description')
+    list_display = ('transaction_id', 'transaction_type', 'amount', 'category', 'payment_method', 'date', 'created_by')
+    search_fields = ('transaction_id', 'reference_number', 'category', 'description')
     list_filter = ('transaction_type', 'payment_method', 'date')
     date_hierarchy = 'date'
 
 
 @admin.register(Supplier)
 class SupplierAdmin(admin.ModelAdmin):
-    list_display = ('name', 'contact_person', 'contact_number', 'email', 'category', 'status')
-    search_fields = ('name', 'contact_person', 'email', 'contact_number')
+    list_display = ('supplier_id', 'name', 'contact_person', 'contact_number', 'email', 'category', 'status')
+    search_fields = ('supplier_id', 'name', 'contact_person', 'email', 'contact_number')
     list_filter = ('status', 'category')
 
 
 @admin.register(Medicine)
 class MedicineAdmin(admin.ModelAdmin):
-    list_display = ('name', 'generic_name', 'category', 'batch_number', 'quantity', 'min_stock_level', 'selling_price', 'expiry_date', 'is_active')
-    search_fields = ('name', 'generic_name', 'batch_number', 'manufacturer')
-    list_filter = ('category', 'is_active', 'expiry_date')
+    list_display = ('medicine_id', 'name', 'generic_name', 'category', 'unit', 'unit_cost', 'quantity', 'min_stock_level', 'expiry_date', 'is_active')
+    search_fields = ('medicine_id', 'name', 'generic_name', 'batch_number', 'manufacturer')
+    list_filter = ('category', 'unit', 'is_active', 'expiry_date')
 
 
 @admin.register(MedicineTransaction)
@@ -148,9 +169,9 @@ class MedicineTransactionAdmin(admin.ModelAdmin):
 
 @admin.register(PurchaseRequest)
 class PurchaseRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'requester', 'department', 'estimated_amount', 'status', 'approved_by', 'created_at')
-    search_fields = ('request_number', 'requester__username')
-    list_filter = ('status', 'created_at')
+    list_display = ('request_number', 'requester', 'department', 'item_name', 'estimated_amount', 'priority', 'status', 'created_at')
+    search_fields = ('request_number', 'item_name', 'requester__username')
+    list_filter = ('status', 'priority', 'created_at')
     readonly_fields = ('request_number',)
 
 

@@ -1,66 +1,873 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Dashboard - Welfare ERP{% endblock %}
+
+{% block title %}Executive Welfare Dashboard - Factory Medical ERP{% endblock %}
+
 {% block breadcrumb %}
-<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2 bg-slate-50 border-b border-slate-100">
-    <span class="text-slate-700 font-medium">Dashboard</span>
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span class="text-white font-semibold">Executive Dashboard</span>
+        <span class="text-slate-600">/</span>
+        <span class="text-slate-400">Core Medical Operations</span>
+    </div>
+    <div class="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Fiscal Year {{ current_year|default:"2026" }} Live</span>
+    </div>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="p-6">
-    <!-- ERP Dashboard Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Total Hospitals</h3>
-            <p class="text-2xl font-semibold text-slate-800 mt-1">{{ total_hospitals|default:"0" }}</p>
+<div class="space-y-6">
+
+    <!-- Top Executive Header & Quick Actions -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -top-10 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div>
+            <div class="flex items-center gap-2.5 mb-1">
+                <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">
+                    Factory Welfare Dept.
+                </span>
+                <span class="text-xs text-slate-400 font-medium">Operations Center</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Medical & Welfare Operations Dashboard
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                Real-time tracking of employee health claims, panel hospital consultations, fund disbursements, and budget utilization.
+            </p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Medical Claims</h3>
-            <p class="text-2xl font-semibold text-slate-800 mt-1">{{ total_claims|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Pending Claims</h3>
-            <p class="text-2xl font-semibold text-amber-600 mt-1">{{ pending_claims|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Approved Claims</h3>
-            <p class="text-2xl font-semibold text-emerald-600 mt-1">{{ approved_claims|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Rejected Claims</h3>
-            <p class="text-2xl font-semibold text-red-600 mt-1">{{ rejected_claims|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Pending Payments</h3>
-            <p class="text-2xl font-semibold text-slate-800 mt-1">{{ pending_payments|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Current Month Exp</h3>
-            <p class="text-2xl font-semibold text-slate-800 mt-1">Rs {{ current_month_expenses|default:"0" }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 class="text-slate-500 text-xs font-medium uppercase">Current Year Exp</h3>
-            <p class="text-2xl font-semibold text-slate-800 mt-1">Rs {{ current_year_expenses|default:"0" }}</p>
+
+        <!-- Quick Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2.5 relative z-10">
+            <a href="{% url 'claim_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/25 transition-all">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                New Claim
+            </a>
+            <a href="{% url 'visit_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all shadow-sm">
+                <i data-lucide="clipboard-plus" class="w-4 h-4 text-cyan-400"></i>
+                Log Visit
+            </a>
+            <a href="{% url 'employee_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all shadow-sm">
+                <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
+                Add Employee
+            </a>
+            <a href="{% url 'bill_create' %}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all shadow-sm" title="Record Hospital Bill">
+                <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
+                Bill
+            </a>
+            <a href="{% url 'report_index' %}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all shadow-sm" title="View Reports">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i>
+            </a>
         </div>
     </div>
 
-    <!-- Old Dashboard Contents (wrapped) -->
-    <div id="view-dashboard">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <canvas id="monthlyChart"></canvas>
+    <!-- ============================================================
+         12 REAL KPI METRICS GRID (4 cols lg / 2 cols sm)
+         ============================================================ -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- KPI 1: Total Claims Registered -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Claims</span>
+                    <div class="text-2xl font-bold text-white font-mono mt-1">{{ total_claims_count }}</div>
+                    <div class="text-[11px] text-cyan-400/90 mt-1 font-medium flex items-center gap-1">
+                        <i data-lucide="file-text" class="w-3 h-3"></i>
+                        <span>Rs. {{ total_claims_amount|floatformat:0 }} Total Value</span>
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="files" class="w-5 h-5"></i>
+                </div>
             </div>
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <canvas id="categoryChart"></canvas>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Approved: <strong class="text-emerald-400">{{ approved_claims_count }}</strong></span>
+                <a href="{% url 'claim_list' %}" class="text-cyan-400 hover:underline">View all &rarr;</a>
             </div>
         </div>
+
+        <!-- KPI 2: Total Approved Claims Value -->
+        <div class="bg-slate-900/90 border border-emerald-500/20 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Approved Value</span>
+                    <div class="text-2xl font-bold text-emerald-400 font-mono mt-1">Rs. {{ approved_claims_amount|floatformat:0 }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        Verified Welfare Allocation
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Month: <strong class="text-white">Rs. {{ current_month_claims|floatformat:0 }}</strong></span>
+                <span class="text-emerald-400 font-medium">Active Policy</span>
+            </div>
+        </div>
+
+        <!-- KPI 3: Total Disbursed / Paid Amount -->
+        <div class="bg-slate-900/90 border border-teal-500/20 hover:border-teal-500/50 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">Disbursed Funds</span>
+                    <div class="text-2xl font-bold text-teal-400 font-mono mt-1">Rs. {{ disbursed_amount|floatformat:0 }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        Paid out to employees & hospitals
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="landmark" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <a href="{% url 'transaction_list' %}" class="text-teal-400 hover:underline">Treasury Ledger</a>
+                <span class="text-slate-500">Bank Disbursed</span>
+            </div>
+        </div>
+
+        <!-- KPI 4: Pending Approvals / Action Required -->
+        <div class="bg-slate-900/90 border border-amber-500/30 hover:border-amber-500/60 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Pending Review</span>
+                    <div class="text-2xl font-bold text-amber-400 font-mono mt-1">{{ pending_claims_count }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        Rs. {{ pending_claims_amount|floatformat:0 }} awaiting review
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span class="text-amber-400 font-semibold">Action Required</span>
+                <a href="{% url 'claim_list' %}?status=Pending" class="text-amber-400 hover:underline">Review queue &rarr;</a>
+            </div>
+        </div>
+
+        <!-- KPI 5: Active Workforce / Employees -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Employees</span>
+                    <div class="text-2xl font-bold text-white font-mono mt-1">{{ active_employees_count }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        {{ total_employees_count }} Total Registered
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Medical Coverage 100%</span>
+                <a href="{% url 'employee_list' %}" class="text-blue-400 hover:underline">Directory &rarr;</a>
+            </div>
+        </div>
+
+        <!-- KPI 6: Family Members / Dependents -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Eligible Dependents</span>
+                    <div class="text-2xl font-bold text-white font-mono mt-1">{{ total_dependents_count }}</div>
+                    <div class="text-[11px] text-indigo-400 mt-1 font-medium">
+                        Spouses, Children & Parents
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Medical B-Form Linked</span>
+                <span class="text-slate-500">Active Status</span>
+            </div>
+        </div>
+
+        <!-- KPI 7: Panel Hospitals Contracted -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Panel Hospitals</span>
+                    <div class="text-2xl font-bold text-cyan-400 font-mono mt-1">{{ panel_hospitals_count }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        {{ total_hospitals_count }} Total Healthcare Centers
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="building-2" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span class="text-emerald-400 font-medium">Contracted Rates</span>
+                <a href="{% url 'hospital_list' %}" class="text-cyan-400 hover:underline">Hospitals &rarr;</a>
+            </div>
+        </div>
+
+        <!-- KPI 8: Registered Specialists & Doctors -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-violet-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Doctors & Specialists</span>
+                    <div class="text-2xl font-bold text-white font-mono mt-1">{{ total_doctors_count }}</div>
+                    <div class="text-[11px] text-violet-400 mt-1 font-medium">
+                        PMC / PMDC Verified
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Multi-Specialty</span>
+                <a href="{% url 'doctor_list' %}" class="text-violet-400 hover:underline">Specialists &rarr;</a>
+            </div>
+        </div>
+
+        <!-- KPI 9: Hospital Consultations & Visits -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-sky-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hospital Visits</span>
+                    <div class="text-2xl font-bold text-sky-400 font-mono mt-1">{{ hospital_visits_count }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        OPD, Emergency & Inpatient
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Consultation Logs</span>
+                <a href="{% url 'visit_list' %}" class="text-sky-400 hover:underline">Visits &rarr;</a>
+            </div>
+        </div>
+
+        <!-- KPI 10: Annual Welfare Budget Utilization -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Budget Utilization</span>
+                    <div class="text-2xl font-bold text-purple-400 font-mono mt-1">{{ budget_utilization_pct }}%</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        Rs. {{ total_budget_used|floatformat:0 }} / Rs. {{ total_budget_allocated|floatformat:0 }}
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="piggy-bank" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-gradient-to-r from-cyan-500 to-purple-500 h-1.5 rounded-full" style="width: {{ budget_utilization_pct|default:0 }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 11: Critical Pharmacy / Medicine Alerts -->
+        <div class="bg-slate-900/90 border {% if low_stock_count > 0 %}border-rose-500/40{% else %}border-slate-800{% endif %} rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pharmacy Stock Alert</span>
+                    <div class="text-2xl font-bold {% if low_stock_count > 0 %}text-rose-400{% else %}text-emerald-400{% endif %} font-mono mt-1">
+                        {{ low_stock_count }}
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        {% if low_stock_count > 0 %}Items Below Safety Threshold{% else %}Pharmacy Inventory Healthy{% endif %}
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl {% if low_stock_count > 0 %}bg-rose-500/10 border border-rose-500/20 text-rose-400 animate-pulse{% else %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-400{% endif %} flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="pill" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <a href="{% url 'medicine_list' %}" class="{% if low_stock_count > 0 %}text-rose-400{% else %}text-emerald-400{% endif %} hover:underline">Manage Inventory &rarr;</a>
+                <span>Re-order trigger</span>
+            </div>
+        </div>
+
+        <!-- KPI 12: Rejected Claims / Ineligible -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-rose-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ineligible Claims</span>
+                    <div class="text-2xl font-bold text-rose-400 font-mono mt-1">{{ rejected_claims_count }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1 font-medium">
+                        Rs. {{ rejected_claims_amount|floatformat:0 }} Non-reimbursable
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Policy Filtered</span>
+                <a href="{% url 'claim_list' %}?status=Rejected" class="text-rose-400 hover:underline">Review &rarr;</a>
+            </div>
+        </div>
+
     </div>
+
+    <!-- ============================================================
+         6 RESPONSIVE CHART.JS DATASETS
+         ============================================================ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <!-- Chart 1: 12-Month Expense Trends (Spans 2 cols on xl) -->
+        <div class="xl:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 mb-4 border-b border-slate-800/80">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i>
+                        12-Month Medical Expense & Bill Trends
+                    </h3>
+                    <p class="text-[11px] text-slate-400">Monthly medical claims reimbursement vs panel hospital invoices (Rs.)</p>
+                </div>
+                <div class="flex items-center gap-4 text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-cyan-400"></span>
+                        <span class="text-slate-300 font-medium">Claims</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-violet-400"></span>
+                        <span class="text-slate-300 font-medium">Hospital Bills</span>
+                    </div>
+                </div>
+            </div>
+            <div class="h-72 w-full">
+                <canvas id="monthlyExpenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Claim Status Distribution (Doughnut) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="pb-4 mb-4 border-b border-slate-800/80">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i>
+                    Claim Status Distribution
+                </h3>
+                <p class="text-[11px] text-slate-400">Proportion of claims across all review stages</p>
+            </div>
+            <div class="h-72 w-full flex items-center justify-center">
+                <canvas id="claimStatusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 3: Department-wise Expenses (Bar) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="pb-4 mb-4 border-b border-slate-800/80">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="building" class="w-4 h-4 text-blue-400"></i>
+                    Department Medical Expenses
+                </h3>
+                <p class="text-[11px] text-slate-400">Total approved health disbursements by factory unit</p>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="departmentExpenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 4: Top Panel Hospital Expenses (Horizontal Bar) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="pb-4 mb-4 border-b border-slate-800/80">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="hospital" class="w-4 h-4 text-teal-400"></i>
+                    Hospital Healthcare Allocation
+                </h3>
+                <p class="text-[11px] text-slate-400">Top medical centers by aggregate patient expenditures</p>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="hospitalExpenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 5: Treatment & Claim Types Breakdown (Polar / Doughnut) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="pb-4 mb-4 border-b border-slate-800/80">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i>
+                    Treatment & Case Classification
+                </h3>
+                <p class="text-[11px] text-slate-400">OPD vs Inpatient vs Pharmacy vs Diagnostics breakdown</p>
+            </div>
+            <div class="h-64 w-full flex items-center justify-center">
+                <canvas id="treatmentTypeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 6: Itemized Fee Breakdown (Bar / Radar) -->
+        <div class="xl:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 mb-4 border-b border-slate-800/80">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="receipt" class="w-4 h-4 text-purple-400"></i>
+                        Aggregate Itemized Fee Distribution
+                    </h3>
+                    <p class="text-[11px] text-slate-400">Cumulative breakdown of doctor fees, laboratory diagnostics, medicines, admission, and surgery charges</p>
+                </div>
+                <span class="text-xs text-cyan-400 font-mono font-bold bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+                    Grand Total: Rs. {{ total_claims_amount|floatformat:0 }}
+                </span>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="feeBreakdownChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+         DATA TABLES & PENDING REVIEWS
+         ============================================================ -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        <!-- Left Table (2 cols on xl): Recent Medical Claims -->
+        <div class="xl:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between">
+            <div>
+                <div class="p-5 border-b border-slate-800/80 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="file-heart" class="w-4 h-4 text-cyan-400"></i>
+                            Recent Medical Claims
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Latest claims submitted for welfare reimbursement</p>
+                    </div>
+                    <a href="{% url 'claim_list' %}" class="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300">
+                        View All Claims &rarr;
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <th class="py-3 px-4">Claim #</th>
+                                <th class="py-3 px-4">Employee / Patient</th>
+                                <th class="py-3 px-4">Hospital / Treatment</th>
+                                <th class="py-3 px-4 text-right">Bill Amount</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                                <th class="py-3 px-4 text-center">Payment</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
+                            {% for claim in recent_claims %}
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3.5 px-4 font-mono font-bold">
+                                    <a href="{% url 'claim_detail' claim.pk %}" class="text-cyan-400 hover:underline">
+                                        {{ claim.claim_number }}
+                                    </a>
+                                    <div class="text-[10px] text-slate-500 font-sans mt-0.5">{{ claim.claim_date|date:"d M Y" }}</div>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-medium text-white">{{ claim.employee.name }}</div>
+                                    <div class="text-[11px] text-slate-400">
+                                        <span class="font-mono text-cyan-400/80">PL# {{ claim.employee.pl_number }}</span>
+                                        {% if claim.dependent %}
+                                        <span class="text-amber-400/90 ml-1">({{ claim.dependent.name }} - {{ claim.dependent.relationship }})</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <div class="text-slate-200 font-medium truncate max-w-[160px]">
+                                        {{ claim.hospital.name|default:"Independent Clinic" }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 truncate max-w-[160px] mt-0.5">
+                                        {{ claim.claim_type }}
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4 text-right font-mono font-semibold text-white">
+                                    Rs. {{ claim.total_bill_amount|floatformat:0 }}
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    {% if claim.claim_status == 'Approved' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                                        Approved
+                                    </span>
+                                    {% elif claim.claim_status == 'Partially Approved' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-950/80 text-teal-400 border border-teal-800/60">
+                                        Partial
+                                    </span>
+                                    {% elif claim.claim_status == 'Rejected' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-400 border border-rose-800/60">
+                                        Rejected
+                                    </span>
+                                    {% elif claim.claim_status == 'Paid' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-emerald-300 border border-slate-700">
+                                        Completed
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-400 border border-amber-800/60">
+                                        Pending
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    {% if claim.payment_status == 'Paid' %}
+                                    <span class="text-[10px] font-semibold text-emerald-400">Paid</span>
+                                    {% elif claim.payment_status == 'Partially Paid' %}
+                                    <span class="text-[10px] font-semibold text-teal-400">Partial</span>
+                                    {% else %}
+                                    <span class="text-[10px] text-slate-500">Unpaid</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <a href="{% url 'claim_detail' claim.pk %}" title="View Claim File" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                        <a href="{% url 'claim_print' claim.pk %}" target="_blank" title="Print Official Voucher" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors">
+                                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-slate-500 text-xs">
+                                    No medical claims recorded yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 text-right">
+                <a href="{% url 'claim_create' %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Record New Claim Entry
+                </a>
+            </div>
+        </div>
+
+        <!-- Right Side: Pending Approvals & Action Center -->
+        <div class="space-y-6">
+
+            <!-- Pending Review Queue -->
+            <div class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                        Pending Approvals
+                    </h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        {{ pending_approvals|length }} Queued
+                    </span>
+                </div>
+
+                <div class="space-y-3">
+                    {% for p_claim in pending_approvals %}
+                    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 hover:border-amber-500/40 transition-colors">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <a href="{% url 'claim_detail' p_claim.pk %}" class="font-mono font-bold text-xs text-amber-400 hover:underline">
+                                    {{ p_claim.claim_number }}
+                                </a>
+                                <div class="text-xs font-medium text-white mt-0.5">{{ p_claim.employee.name }}</div>
+                                <div class="text-[11px] text-slate-400">{{ p_claim.claim_type }} • {{ p_claim.hospital.name|default:"General Clinic" }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-mono font-bold text-xs text-white">Rs. {{ p_claim.total_bill_amount|floatformat:0 }}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">{{ p_claim.claim_date|date:"d M" }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between">
+                            <span class="text-[10px] text-amber-400 font-medium">Awaiting Inspection</span>
+                            <a href="{% url 'claim_detail' p_claim.pk %}" class="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
+                                Review & Approve &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="py-6 text-center text-slate-500 text-xs">
+                        <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400/60 mx-auto mb-2"></i>
+                        No pending approvals in queue. All claims up to date!
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Hospital Consultations Feed -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="stethoscope" class="w-4 h-4 text-cyan-400"></i>
+                        Recent Hospital Visits
+                    </h3>
+                    <a href="{% url 'visit_list' %}" class="text-[11px] font-semibold text-cyan-400 hover:underline">All &rarr;</a>
+                </div>
+
+                <div class="space-y-2.5">
+                    {% for v in recent_visits %}
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/30 border border-slate-800 hover:bg-slate-800/60 transition-colors text-xs">
+                        <div class="truncate max-w-[180px]">
+                            <a href="{% url 'visit_detail' v.pk %}" class="font-medium text-slate-200 hover:text-cyan-400 block truncate">
+                                {{ v.employee.name }}
+                            </a>
+                            <div class="text-[10px] text-slate-400 truncate mt-0.5">
+                                {{ v.diagnosis|default:"General OPD Consultation" }}
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40">
+                                {{ v.visit_type }}
+                            </span>
+                            <div class="text-[10px] text-slate-500 mt-1 font-mono">{{ v.visit_date|date:"d M" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="py-4 text-center text-slate-500 text-xs">
+                        No hospital consultations logged yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-    const monthlyLabels = {{ monthly_chart_labels|safe|default:"[]" }};
-    const monthlyData = {{ monthly_chart_data|safe|default:"[]" }};
-    // ... chart init ...
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // Global Chart Defaults for Dark Navy Theme
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(51, 65, 85, 0.4)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.plugins.tooltip.backgroundColor = '#0f172a';
+        Chart.defaults.plugins.tooltip.titleColor = '#f8fafc';
+        Chart.defaults.plugins.tooltip.bodyColor = '#e2e8f0';
+        Chart.defaults.plugins.tooltip.borderColor = '#334155';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+        // 1. Monthly Expense Chart (12 Months Trend)
+        const ctxMonthly = document.getElementById('monthlyExpenseChart');
+        if (ctxMonthly) {
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: {{ monthly_chart_labels|safe }},
+                    datasets: [
+                        {
+                            label: 'Medical Claims (Rs.)',
+                            data: {{ monthly_claims_data|safe }},
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        },
+                        {
+                            label: 'Hospital Bills (Rs.)',
+                            data: {{ monthly_bills_data|safe }},
+                            backgroundColor: 'rgba(139, 92, 246, 0.75)',
+                            borderColor: '#8b5cf6',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            ticks: {
+                                callback: value => 'Rs. ' + (value >= 1000 ? (value/1000).toFixed(0) + 'k' : value)
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 2. Claim Status Doughnut Chart
+        const ctxStatus = document.getElementById('claimStatusChart');
+        if (ctxStatus) {
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ status_labels|safe }},
+                    datasets: [{
+                        data: {{ status_counts|safe }},
+                        backgroundColor: [
+                            '#f59e0b', // Pending
+                            '#3b82f6', // Under Review
+                            '#10b981', // Approved
+                            '#14b8a6', // Partially Approved
+                            '#f43f5e', // Rejected
+                            '#06b6d4', // Paid
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, padding: 12, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Department Expenses Chart
+        const ctxDept = document.getElementById('departmentExpenseChart');
+        if (ctxDept) {
+            new Chart(ctxDept, {
+                type: 'bar',
+                data: {
+                    labels: {{ dept_labels|safe }},
+                    datasets: [{
+                        label: 'Approved Expenses (Rs.)',
+                        data: {{ dept_expenses|safe }},
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            ticks: {
+                                callback: value => 'Rs. ' + (value >= 1000 ? (value/1000).toFixed(0) + 'k' : value)
+                            }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 4. Hospital Expenses Chart (Horizontal Bar)
+        const ctxHosp = document.getElementById('hospitalExpenseChart');
+        if (ctxHosp) {
+            new Chart(ctxHosp, {
+                type: 'bar',
+                data: {
+                    labels: {{ hospital_labels|safe }},
+                    datasets: [{
+                        label: 'Hospital Claims (Rs.)',
+                        data: {{ hospital_expenses|safe }},
+                        backgroundColor: '#2dd4bf',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: value => 'Rs. ' + (value >= 1000 ? (value/1000).toFixed(0) + 'k' : value)
+                            }
+                        },
+                        y: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 5. Treatment & Claim Types Breakdown (Polar / Doughnut)
+        const ctxType = document.getElementById('treatmentTypeChart');
+        if (ctxType) {
+            new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ type_labels|safe }},
+                    datasets: [{
+                        data: {{ type_counts|safe }},
+                        backgroundColor: [
+                            '#06b6d4',
+                            '#f43f5e',
+                            '#8b5cf6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#3b82f6',
+                            '#64748b',
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, padding: 8, font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 6. Aggregate Fee Breakdown Chart
+        const ctxFee = document.getElementById('feeBreakdownChart');
+        if (ctxFee) {
+            new Chart(ctxFee, {
+                type: 'bar',
+                data: {
+                    labels: {{ fee_labels|safe }},
+                    datasets: [{
+                        label: 'Total Fee Incurred (Rs.)',
+                        data: {{ fee_amounts|safe }},
+                        backgroundColor: [
+                            '#06b6d4',
+                            '#38bdf8',
+                            '#818cf8',
+                            '#a78bfa',
+                            '#c084fc',
+                            '#f472b6',
+                            '#94a3b8'
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            ticks: {
+                                callback: value => 'Rs. ' + (value >= 1000 ? (value/1000).toFixed(0) + 'k' : value)
+                            }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+    });
 </script>
 {% endblock %}

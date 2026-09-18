@@ -1,6 +1,195 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Hospital Form{% endblock %}
+
+{% block title %}{{ title|default:"Hospital Registration" }} - Welfare ERP{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <a href="{% url 'hospital_list' %}" class="hover:text-cyan-400 transition-colors">Hospitals</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">{{ title|default:"Register Hospital" }}</span>
+    </div>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="p-6">Form</div>
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        {{ title|default:"Register Healthcare Facility" }}
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Configure hospital panel contract, contacts, city location, and agreement terms.
+                    </p>
+                </div>
+            </div>
+            <a href="{% url 'hospital_list' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+                &larr; Back to Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Container Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <form method="POST" class="space-y-6 text-xs">
+            {% csrf_token %}
+
+            <!-- Section 1: Basic Facility Details -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
+                    <i data-lucide="hospital" class="w-4 h-4"></i>
+                    1. Basic Facility Information
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Hospital / Clinic Full Name <span class="text-rose-400">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Hospital Code (e.g. HOSP-001)
+                        </label>
+                        {{ form.hospital_code }}
+                        {% if form.hospital_code.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.hospital_code.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Facility Type
+                        </label>
+                        {{ form.hospital_type }}
+                        {% if form.hospital_type.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.hospital_type.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            City / Location
+                        </label>
+                        {{ form.city }}
+                        {% if form.city.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.city.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Operational Status
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.status.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Complete Physical Street Address
+                        </label>
+                        {{ form.address }}
+                        {% if form.address.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.address.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Contact & Liaison -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                    2. Contact & Administrative Liaison
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Contact Person / Officer
+                        </label>
+                        {{ form.contact_person }}
+                        {% if form.contact_person.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.contact_person.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Phone / UAN Number
+                        </label>
+                        {{ form.contact_number }}
+                        {% if form.contact_number.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.contact_number.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Official Email
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Panel Contract & Terms -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    3. Panel Agreement & Special Terms
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Panel / Contract Status
+                        </label>
+                        {{ form.panel_status }}
+                        {% if form.panel_status.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.panel_status.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Agreement Start Date
+                        </label>
+                        {{ form.contract_start_date }}
+                        {% if form.contract_start_date.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.contract_start_date.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Agreement Expiry Date
+                        </label>
+                        {{ form.contract_end_date }}
+                        {% if form.contract_end_date.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.contract_end_date.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Special Terms, Discount Rates & Operational Notes
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.notes.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <a href="{% url 'hospital_list' %}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/25 transition">
+                    Save Hospital Record
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
 {% endblock %}

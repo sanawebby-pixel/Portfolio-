@@ -1,3 +1,153 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Doctor Form{% endblock %}
-{% block content %}<div class="p-6">Form</div>{% endblock %}
+{% load welfare_tags %}
+
+{% block title %}{{ title|default:"Register Doctor / Specialist" }} - Welfare ERP{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <a href="{% url 'doctor_list' %}" class="hover:text-cyan-400 transition-colors">Doctors</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">{{ title|default:"Register Doctor" }}</span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        {{ title|default:"Register Doctor / Specialist" }}
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Add verified medical practitioners, consulting specialists, and hospital clinicians.
+                    </p>
+                </div>
+            </div>
+            <a href="{% url 'doctor_list' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+                &larr; Back to Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Container Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <form method="POST" class="space-y-6 text-xs">
+            {% csrf_token %}
+
+            <!-- Section 1: Professional Details -->
+            <div>
+                <h3 class="text-xs font-bold text-violet-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
+                    <i data-lucide="user-check" class="w-4 h-4"></i>
+                    1. Professional Identity & Specialization
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Doctor Full Name & Title <span class="text-rose-400">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Medical Specialization (e.g. Cardiology, Orthopedics)
+                        </label>
+                        {{ form.specialization }}
+                        {% if form.specialization.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.specialization.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            PMC / PMDC Registration Number
+                        </label>
+                        {{ form.registration_number }}
+                        {% if form.registration_number.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.registration_number.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Affiliated Hospital / Clinic
+                        </label>
+                        {{ form.hospital }}
+                        {% if form.hospital.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.hospital.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Standard Consultation Fee (Rs.)
+                        </label>
+                        {{ form.consultation_fee }}
+                        {% if form.consultation_fee.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.consultation_fee.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Contact & Availability -->
+            <div>
+                <h3 class="text-xs font-bold text-violet-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                    2. Contact Information & Clinic Schedule
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Phone / Contact Number
+                        </label>
+                        {{ form.contact }}
+                        {% if form.contact.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.contact.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Email Address
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Practitioner Status
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.status.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Doctor Profile Notes, OPD Hours & Availability
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.notes.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <a href="{% url 'doctor_list' %}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold shadow-lg shadow-violet-500/25 transition">
+                    Save Doctor Profile
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

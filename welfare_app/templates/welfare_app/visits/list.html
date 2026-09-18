@@ -1,3 +1,287 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Visits{% endblock %}
-{% block content %}<div class="p-6">Visits</div>{% endblock %}
+{% load welfare_tags %}
+
+{% block title %}Hospital Visits & Consultations - Welfare ERP{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">Hospital Visits & Consultations</span>
+    </div>
+    <span class="text-[11px] font-mono text-cyan-400">{{ stats.total_count }} Total Visits Logged</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <i data-lucide="clipboard-list" class="w-6 h-6 text-sky-400"></i>
+                Hospital Visits & Medical Consultations
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Log and monitor employee OPD visits, emergency hospital treatments, inpatient admissions, and medical prescriptions.
+            </p>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <a href="{% url 'export_report' 'hospitals' %}?{{ request.GET.urlencode }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
+                Export
+            </a>
+            <a href="{% url 'visit_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-sky-500/25 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Log Hospital Visit
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary KPI Ribbon (5 columns) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Consultations</span>
+            <div class="text-2xl font-bold text-white font-mono mt-1">{{ stats.total_count }}</div>
+            <div class="text-[11px] text-sky-400 mt-1">All Logged Encounters</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">OPD Consultations</span>
+            <div class="text-2xl font-bold text-cyan-400 font-mono mt-1">{{ stats.opd_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Outpatient Clinic Visits</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-rose-400 uppercase tracking-wider">Emergency Cases</span>
+            <div class="text-2xl font-bold text-rose-400 font-mono mt-1">{{ stats.emergency_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Critical Care & ER</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-violet-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-violet-400 uppercase tracking-wider">Hospital Admissions</span>
+            <div class="text-2xl font-bold text-violet-400 font-mono mt-1">{{ stats.admission_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Inpatient Ward & Surgery</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Total Incurred Cost</span>
+            <div class="text-xl font-bold text-emerald-400 font-mono mt-1">Rs. {{ stats.total_cost|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Visit & Treatment Charges</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'visit_list' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end text-xs">
+            
+            <!-- Search Input -->
+            <div class="lg:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Search Patient / Visit</label>
+                <div class="relative">
+                    <input type="text" name="q" value="{{ q }}" placeholder="Employee Name, PL#, Patient, Diagnosis..."
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+                </div>
+            </div>
+
+            <!-- Visit Type Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Visit Type</label>
+                <select name="type" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="">All Types</option>
+                    <option value="OPD" {% if visit_type == 'OPD' %}selected{% endif %}>OPD Outpatient</option>
+                    <option value="Emergency" {% if visit_type == 'Emergency' %}selected{% endif %}>Emergency Room</option>
+                    <option value="Admission" {% if visit_type == 'Admission' %}selected{% endif %}>Hospital Admission</option>
+                    <option value="Follow-up" {% if visit_type == 'Follow-up' %}selected{% endif %}>Follow-up</option>
+                    <option value="Lab Test" {% if visit_type == 'Lab Test' %}selected{% endif %}>Laboratory Diagnostic</option>
+                    <option value="Consultation" {% if visit_type == 'Consultation' %}selected{% endif %}>Specialist Consultation</option>
+                </select>
+            </div>
+
+            <!-- Hospital Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Hospital</label>
+                <select name="hospital" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="">All Hospitals</option>
+                    {% for h in hospitals %}
+                        <option value="{{ h.id }}" {% if hospital_id == h.id|stringformat:"i" %}selected{% endif %}>{{ h.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status</label>
+                <select name="status" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="">All Statuses</option>
+                    <option value="Completed" {% if status == 'Completed' %}selected{% endif %}>Completed</option>
+                    <option value="Open" {% if status == 'Open' %}selected{% endif %}>Open</option>
+                    <option value="Follow-up Required" {% if status == 'Follow-up Required' %}selected{% endif %}>Follow-up Required</option>
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                <a href="{% url 'visit_list' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-3 rounded-xl border border-slate-700 transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Visits Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                        <th class="py-3 px-4">Visit Date</th>
+                        <th class="py-3 px-4">Employee & Patient</th>
+                        <th class="py-3 px-4">Hospital & Doctor</th>
+                        <th class="py-3 px-4 text-center">Type</th>
+                        <th class="py-3 px-4">Clinical Diagnosis</th>
+                        <th class="py-3 px-4 text-right">Total Cost</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
+                    {% for v in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        
+                        <!-- Visit Date -->
+                        <td class="py-3.5 px-4 font-mono">
+                            <a href="{% url 'visit_detail' v.pk %}" class="font-bold text-sky-400 hover:underline">
+                                {{ v.visit_date|date:"d M Y" }}
+                            </a>
+                            <div class="text-[10px] text-slate-500 font-sans">{{ v.created_at|date:"h:i A" }}</div>
+                        </td>
+
+                        <!-- Employee & Patient -->
+                        <td class="py-3.5 px-4">
+                            <a href="{% url 'employee_detail' v.employee.pk %}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                                {{ v.employee.name }}
+                            </a>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                <span class="font-mono text-cyan-400">PL# {{ v.employee.pl_number }}</span>
+                                <span>•</span>
+                                <span>{{ v.employee.department }}</span>
+                            </div>
+                            {% if v.dependent %}
+                            <div class="text-[10px] text-amber-400/90 mt-0.5 flex items-center gap-1">
+                                <i data-lucide="user" class="w-3 h-3"></i>
+                                Patient: {{ v.dependent.name }} ({{ v.dependent.relationship }})
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Hospital & Doctor -->
+                        <td class="py-3.5 px-4">
+                            <div class="font-medium text-slate-200 truncate max-w-[170px]">
+                                {{ v.hospital.name|default:v.hospital_name|default:"Independent Facility" }}
+                            </div>
+                            <div class="text-[11px] text-slate-400 truncate max-w-[170px] mt-0.5">
+                                {{ v.doctor.name|default:v.doctor_name|default:"Attending Specialist" }}
+                            </div>
+                        </td>
+
+                        <!-- Type Badge -->
+                        <td class="py-3.5 px-4 text-center">
+                            {% if v.visit_type == 'Emergency' %}
+                                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-950 text-rose-400 border border-rose-800/60">
+                                    Emergency
+                                </span>
+                            {% elif v.visit_type == 'Admission' %}
+                                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-violet-950 text-violet-400 border border-violet-800/60">
+                                    Admission
+                                </span>
+                            {% elif v.visit_type == 'Follow-up' %}
+                                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-950 text-amber-400 border border-amber-800/60">
+                                    Follow-up
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-sky-950 text-sky-400 border border-sky-800/60">
+                                    OPD
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Diagnosis -->
+                        <td class="py-3.5 px-4 max-w-[200px]">
+                            <div class="text-slate-200 font-medium truncate" title="{{ v.diagnosis }}">
+                                {{ v.diagnosis|default:"Routine Medical Checkup" }}
+                            </div>
+                            {% if v.treatment %}
+                            <div class="text-[11px] text-slate-400 truncate mt-0.5" title="{{ v.treatment }}">
+                                {{ v.treatment }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Cost -->
+                        <td class="py-3.5 px-4 text-right font-mono font-bold text-white">
+                            Rs. {{ v.total_visit_cost|floatformat:0 }}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="py-3.5 px-4 text-center">
+                            {% if v.status == 'Completed' %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Completed
+                                </span>
+                            {% elif v.status == 'Follow-up Required' %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Follow-up
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Open
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'visit_detail' v.pk %}" title="View Visit File" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'claim_create' %}?employee={{ v.employee.pk }}" title="File Medical Claim" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 transition">
+                                    <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'visit_update' v.pk %}" title="Edit Visit" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'visit_delete' v.pk %}" onclick="return confirm('Delete this consultation record?');" title="Delete" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500 text-xs">
+                            <i data-lucide="clipboard-list" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+                            No hospital consultations or visits recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-slate-800">
+            {% include "welfare_app/components/pagination.html" %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

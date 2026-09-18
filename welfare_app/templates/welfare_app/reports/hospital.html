@@ -1,3 +1,223 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Hospital Report{% endblock %}
-{% block content %}<div class="p-6">Report</div>{% endblock %}
+{% load static %}
+
+{% block title %}Hospital & Panel Utilization Report - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'report_index' %}" class="hover:text-cyan-400 transition-colors">Reports Hub</a>
+        <span>/</span>
+        <span class="text-cyan-400">Hospital Utilization</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="building-2" class="w-7 h-7 text-cyan-400"></i>
+        Hospital & Panel Healthcare Facility Utilization Report
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Contract compliance, patient referral distribution, panel vs non-panel expenditure, and billing analytics.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <a href="{% url 'export_report' 'hospitals' %}?format=csv&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm">
+        <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+        <span>Export CSV</span>
+      </a>
+      <a href="{% url 'export_report' 'hospitals' %}?format=excel&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-800/60 bg-emerald-950/40 text-xs font-semibold text-emerald-400 hover:bg-emerald-900/60 transition-all shadow-sm">
+        <i data-lucide="sheet" class="w-4 h-4 text-emerald-400"></i>
+        <span>Export Excel (.xls)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Ribbon -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Recorded Patient Visits</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-white font-mono">{{ grand_total_visits }}</div>
+        <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">Visits</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Cumulative Across Facilities</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Total Approved Healthcare Cost</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-xl font-bold text-emerald-400 font-mono">Rs. {{ grand_total_approved|floatformat:0 }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Disbursed to Hospitals & Staff</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-blue-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Gross Invoiced by Hospitals</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-xl font-bold text-blue-400 font-mono">Rs. {{ grand_total_billed|floatformat:0 }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Total Bill Submissions</div>
+    </div>
+
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+    <form method="GET" action="{% url 'hospital_report' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+      
+      <!-- Search Keyword -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Facility</label>
+        <div class="relative">
+          <input type="text" name="q" value="{{ q }}" placeholder="Name, City, Contact..."
+                 class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+        </div>
+      </div>
+
+      <!-- City -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">City</label>
+        <select name="city" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Cities</option>
+          {% for c in cities %}
+          <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Panel Status -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Panel Status</label>
+        <select name="panel_status" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Panel Statuses</option>
+          <option value="Panel" {% if panel_status == 'Panel' %}selected{% endif %}>Panel Hospital (Contracted)</option>
+          <option value="Non-Panel" {% if panel_status == 'Non-Panel' %}selected{% endif %}>Non-Panel Hospital</option>
+        </select>
+      </div>
+
+      <!-- Hospital Type -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Facility Type</label>
+        <select name="hospital_type" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Types</option>
+          <option value="Private" {% if hospital_type == 'Private' %}selected{% endif %}>Private Hospital</option>
+          <option value="Government" {% if hospital_type == 'Government' %}selected{% endif %}>Government Hospital</option>
+          <option value="Semi-Government" {% if hospital_type == 'Semi-Government' %}selected{% endif %}>Semi-Government</option>
+          <option value="Clinic" {% if hospital_type == 'Clinic' %}selected{% endif %}>Clinic / Center</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          <span>Filter</span>
+        </button>
+        <a href="{% url 'hospital_report' %}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors">
+          Reset
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Hospitals Summary Table -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3 px-4">Code</th>
+            <th class="py-3 px-4">Hospital Name</th>
+            <th class="py-3 px-4">City / Address</th>
+            <th class="py-3 px-4">Panel Status</th>
+            <th class="py-3 px-4 text-center">Contract</th>
+            <th class="py-3 px-4 text-center">Visits</th>
+            <th class="py-3 px-4 text-center">Claims</th>
+            <th class="py-3 px-4 text-right">Invoiced (Rs)</th>
+            <th class="py-3 px-4 text-right">Approved (Rs)</th>
+            <th class="py-3 px-4 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-xs">
+          {% for row in hospital_data %}
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3 px-4 font-mono font-bold text-cyan-400">
+              <a href="{% url 'hospital_detail' row.hospital.pk %}" class="hover:underline">{{ row.hospital.hospital_code|default:'N/A' }}</a>
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-semibold text-white">{{ row.hospital.name }}</div>
+              <div class="text-[10px] text-slate-400 font-mono">{{ row.hospital.get_hospital_type_display }}</div>
+            </td>
+            <td class="py-3 px-4 text-slate-300">
+              <div>{{ row.hospital.city|default:'General' }}</div>
+              <div class="text-[10px] text-slate-500 truncate max-w-xs">{{ row.hospital.address|default:'' }}</div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                {% if row.hospital.panel_status == 'Panel' %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400
+                {% else %}bg-slate-800 border border-slate-700 text-slate-400{% endif %}">
+                {{ row.hospital.panel_status }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              {% if row.is_contract_active %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-mono text-rose-400 font-bold bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/40">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Expired
+              </span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 text-center font-mono font-bold text-slate-200">
+              {{ row.visit_count }}
+            </td>
+            <td class="py-3 px-4 text-center font-mono font-bold text-cyan-400">
+              {{ row.claim_count }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-300">
+              {{ row.total_billed|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">
+              {{ row.total_approved|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right">
+              <a href="{% url 'hospital_detail' row.hospital.pk %}" class="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 font-semibold">
+                <span>View</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="py-12 text-center text-slate-500">
+              <i data-lucide="building-2" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+              <p class="text-sm font-semibold">No medical facilities found matching criteria.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

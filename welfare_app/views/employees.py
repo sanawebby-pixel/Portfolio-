@@ -226,3 +226,12 @@ def dependent_delete(request, pk):
     )
     messages.success(request, f'Dependent "{dep_name}" removed.')
     return redirect('employee_detail', pk=employee_pk)
+
+
+@login_required
+def employee_dependents_api(request, pk):
+    """JSON API endpoint returning active dependents for an employee."""
+    from django.http import JsonResponse
+    dependents = Dependent.objects.filter(employee_id=pk, status='Active').values('id', 'name', 'relationship')
+    return JsonResponse({'dependents': list(dependents)})
+

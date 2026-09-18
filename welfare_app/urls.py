@@ -41,6 +41,7 @@ urlpatterns = [
     path('employees/<int:employee_pk>/dependents/add/', views.dependent_create, name='dependent_create'),
     path('dependents/<int:pk>/edit/', views.dependent_update, name='dependent_update'),
     path('dependents/<int:pk>/delete/', views.dependent_delete, name='dependent_delete'),
+    path('api/employees/<int:pk>/dependents/', views.employee_dependents_api, name='employee_dependents_api'),
 
     # ============================================================
     # Hospital Management
@@ -79,6 +80,8 @@ urlpatterns = [
     path('claims/<int:pk>/submit/', views.claim_submit, name='claim_submit'),
     path('claims/<int:pk>/approve/', views.claim_approve, name='claim_approve'),
     path('claims/<int:pk>/reject/', views.claim_reject, name='claim_reject'),
+    path('claims/<int:pk>/payment/', views.claim_payment_create, name='claim_payment_create'),
+    path('claims/<int:pk>/print/', views.claim_print, name='claim_print'),
 
     # ============================================================
     # Bills & Expenses
@@ -96,8 +99,10 @@ urlpatterns = [
     path('finance/budgets/', views.budget_list, name='budget_list'),
     path('finance/budgets/create/', views.budget_create, name='budget_create'),
     path('finance/budgets/<int:pk>/edit/', views.budget_update, name='budget_update'),
+    path('finance/budgets/<int:pk>/delete/', views.budget_delete, name='budget_delete'),
     path('finance/transactions/', views.transaction_list, name='transaction_list'),
     path('finance/transactions/create/', views.transaction_create, name='transaction_create'),
+    path('finance/transactions/<int:pk>/delete/', views.transaction_delete, name='transaction_delete'),
 
     # ============================================================
     # Approvals
@@ -121,14 +126,20 @@ urlpatterns = [
     path('suppliers/', views.supplier_list, name='supplier_list'),
     path('suppliers/create/', views.supplier_create, name='supplier_create'),
     path('suppliers/<int:pk>/edit/', views.supplier_update, name='supplier_update'),
+    path('suppliers/<int:pk>/delete/', views.supplier_delete, name='supplier_delete'),
     path('purchase-requests/', views.purchase_request_list, name='purchase_request_list'),
     path('purchase-requests/create/', views.purchase_request_create, name='purchase_request_create'),
+    path('purchase-requests/<int:pk>/edit/', views.purchase_request_update, name='purchase_request_update'),
+    path('purchase-requests/<int:pk>/delete/', views.purchase_request_delete, name='purchase_request_delete'),
     path('purchase-requests/<int:pk>/approve/', views.purchase_request_approve, name='purchase_request_approve'),
     path('purchase-orders/', views.purchase_order_list, name='purchase_order_list'),
     path('purchase-orders/create/', views.purchase_order_create, name='purchase_order_create'),
+    path('purchase-orders/<int:pk>/edit/', views.purchase_order_update, name='purchase_order_update'),
+    path('purchase-orders/<int:pk>/delete/', views.purchase_order_delete, name='purchase_order_delete'),
+    path('purchase-orders/<int:pk>/status/', views.purchase_order_status, name='purchase_order_status'),
 
     # ============================================================
-    # Reports
+    # Reports & Analytics (16 categories + Exporter)
     # ============================================================
     path('reports/', views.report_index, name='report_index'),
     path('reports/employees/', views.employee_report, name='employee_report'),
@@ -137,7 +148,31 @@ urlpatterns = [
     path('reports/claims/', views.claim_report, name='claim_report'),
     path('reports/budget/', views.budget_report, name='budget_report'),
     path('reports/inventory/', views.inventory_report, name='inventory_report'),
+    path('reports/doctors/', views.doctor_report, name='doctor_report'),
+    path('reports/visits/', views.visit_report, name='visit_report'),
+    path('reports/bills/', views.bill_report, name='bill_report'),
+    path('reports/finance/', views.finance_report, name='finance_report'),
+    path('reports/approvals/', views.approval_report, name='approval_report'),
+    path('reports/procurement/', views.procurement_report, name='procurement_report'),
+    path('reports/dependents/', views.dependent_report, name='dependent_report'),
+    path('reports/expiry/', views.expiry_report, name='expiry_report'),
+    path('reports/suppliers/', views.supplier_report, name='supplier_report'),
+    path('reports/audit-summary/', views.audit_summary_report, name='audit_summary_report'),
     path('reports/export/<str:report_type>/', views.export_report, name='export_report'),
+
+    # ============================================================
+    # Settings & Benefit Rules
+    # ============================================================
+    path('settings/', views.settings_index, name='settings_index'),
+    path('settings/departments/', views.department_list, name='department_list'),
+    path('settings/departments/create/', views.department_create, name='department_create'),
+    path('settings/departments/<int:pk>/edit/', views.department_update, name='department_update'),
+    path('settings/departments/<int:pk>/delete/', views.department_delete, name='department_delete'),
+    path('settings/benefit-rules/', views.benefit_rule_list, name='benefit_rule_list'),
+    path('settings/benefit-rules/create/', views.benefit_rule_create, name='benefit_rule_create'),
+    path('settings/benefit-rules/<int:pk>/edit/', views.benefit_rule_update, name='benefit_rule_update'),
+    path('settings/benefit-rules/<int:pk>/delete/', views.benefit_rule_delete, name='benefit_rule_delete'),
+    path('settings/seed-demo-data/', views.seed_demo_data, name='seed_demo_data'),
 
     # ============================================================
     # Global Search
@@ -151,12 +186,15 @@ urlpatterns = [
     path('users/create/', views.user_create, name='user_create'),
     path('users/<int:pk>/edit/', views.user_update, name='user_update'),
     path('users/<int:pk>/toggle/', views.user_toggle_active, name='user_toggle_active'),
+    path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
+    path('users/<int:pk>/password/', views.user_change_password, name='user_change_password'),
 
     # ============================================================
     # Notifications
     # ============================================================
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:pk>/read/', views.notification_mark_read, name='notification_mark_read'),
+    path('notifications/<int:pk>/delete/', views.notification_delete, name='notification_delete'),
     path('notifications/mark-all-read/', views.notification_mark_all_read, name='notification_mark_all_read'),
 
     # ============================================================

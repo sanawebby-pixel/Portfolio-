@@ -138,6 +138,10 @@
                     <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
                     <span class="text-xs font-semibold">Reports & Analytics</span>
                 </a>
+                <a href="{% url 'settings_index' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'settings' %}">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span class="text-xs font-semibold">Settings & Rules</span>
+                </a>
                 <a href="{% url 'user_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% is_active_nav 'users' %}">
                     <i data-lucide="shield" class="w-4 h-4"></i>
                     <span class="text-xs font-semibold">User & Roles</span>

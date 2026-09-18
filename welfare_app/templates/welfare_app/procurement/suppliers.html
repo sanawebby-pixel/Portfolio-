@@ -1,3 +1,270 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Suppliers{% endblock %}
-{% block content %}<div class="p-6">Suppliers</div>{% endblock %}
+{% load static %}
+
+{% block title %}Suppliers Directory - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{
+    deleteModalOpen: false,
+    activeSupId: null,
+    activeSupName: '',
+    openDelete(id, name) { this.activeSupId = id; this.activeSupName = name; this.deleteModalOpen = true; }
+}">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-cyan-400">Procurement</span>
+                <span>/</span>
+                <span class="text-slate-200">Suppliers</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="truck" class="w-6 h-6"></i>
+                </div>
+                Suppliers & Vendor Directory
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Manage approved pharmaceutical distributors, medical equipment vendors, NTN tax registrations, and credit payment terms.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'purchase_order_list' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-cyan-400"></i>
+                Purchase Orders
+            </a>
+            <a href="{% url 'supplier_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Add Supplier
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Registered Suppliers</div>
+            <div class="mt-2 text-xl font-bold text-white font-mono">{{ stats.total_suppliers }}</div>
+            <div class="text-[11px] text-cyan-400 mt-1">Vendor Network</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Active Vendors</div>
+            <div class="mt-2 text-xl font-bold text-emerald-400 font-mono">{{ stats.active_suppliers }}</div>
+            <div class="text-[11px] text-emerald-400/80 mt-1">Approved for Orders</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-blue-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Total Orders Issued</div>
+            <div class="mt-2 text-xl font-bold text-blue-300 font-mono">{{ stats.total_pos }} POs</div>
+            <div class="text-[11px] text-slate-400 mt-1">Fulfillment Contracts</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-purple-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Total Procurement Value</div>
+            <div class="mt-2 text-lg font-bold text-purple-300 font-mono">Rs. {{ stats.total_spend|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">All-Time Spend</div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'supplier_list' %}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <!-- Search -->
+            <div class="md:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Supplier / Contact / City / NTN</label>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" name="q" value="{{ q }}" placeholder="Supplier name, contact person, city, NTN #..." 
+                           class="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</label>
+                <select name="status" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Statuses</option>
+                    <option value="Active" {% if status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Inactive" {% if status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                {% if q or status or category %}
+                <a href="{% url 'supplier_list' %}" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold transition" title="Clear Filters">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Suppliers Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="px-4 py-3.5">Supplier & Code</th>
+                        <th class="px-4 py-3.5">Contact Person</th>
+                        <th class="px-4 py-3.5">Phone & Email</th>
+                        <th class="px-4 py-3.5">City / Location</th>
+                        <th class="px-4 py-3.5">Category / Specialization</th>
+                        <th class="px-4 py-3.5">NTN #</th>
+                        <th class="px-4 py-3.5">Payment Terms</th>
+                        <th class="px-4 py-3.5 text-center">Status</th>
+                        <th class="px-4 py-3.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for sup in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <!-- Name & Code -->
+                        <td class="px-4 py-3.5">
+                            <div class="font-bold text-white flex items-center gap-2">
+                                <i data-lucide="truck" class="w-3.5 h-3.5 text-cyan-400"></i>
+                                {{ sup.name }}
+                            </div>
+                            <div class="text-[10px] text-cyan-400 font-mono mt-0.5">{{ sup.supplier_id }}</div>
+                        </td>
+
+                        <!-- Contact Person -->
+                        <td class="px-4 py-3.5">
+                            <div class="text-slate-200 font-medium">{{ sup.contact_person|default:'-' }}</div>
+                        </td>
+
+                        <!-- Phone & Email -->
+                        <td class="px-4 py-3.5 font-mono">
+                            {% if sup.contact_number %}
+                            <div class="text-slate-300 flex items-center gap-1">
+                                <i data-lucide="phone" class="w-3 h-3 text-slate-500"></i> {{ sup.contact_number }}
+                            </div>
+                            {% endif %}
+                            {% if sup.email %}
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <i data-lucide="mail" class="w-3 h-3 text-slate-500"></i> {{ sup.email }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- City -->
+                        <td class="px-4 py-3.5">
+                            <div class="text-slate-200">{{ sup.city|default:'-' }}</div>
+                            {% if sup.address %}
+                            <div class="text-[10px] text-slate-400 truncate max-w-xs mt-0.5" title="{{ sup.address }}">{{ sup.address }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Category -->
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ sup.category|default:'General Supply' }}
+                            </span>
+                        </td>
+
+                        <!-- NTN -->
+                        <td class="px-4 py-3.5 font-mono text-slate-300">
+                            {{ sup.ntn_registration|default:'-' }}
+                        </td>
+
+                        <!-- Payment Terms -->
+                        <td class="px-4 py-3.5 text-slate-300">
+                            {{ sup.payment_terms|default:'Net 30 Days' }}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if sup.status == 'Active' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-4 py-3.5 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'supplier_update' sup.id %}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition" title="Edit Supplier">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <button @click="openDelete({{ sup.id }}, '{{ sup.name }}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition" title="Delete">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-500">
+                                    <i data-lucide="truck" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-300">No suppliers found.</p>
+                                <p class="text-xs text-slate-500 max-w-sm">Register vendors to issue Purchase Requests and Purchase Orders.</p>
+                                <a href="{% url 'supplier_create' %}" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Register First Supplier
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Showing <span class="font-bold text-slate-200">{{ page_obj.start_index }}</span> to <span class="font-bold text-slate-200">{{ page_obj.end_index }}</span> of <span class="font-bold text-slate-200">{{ page_obj.paginator.count }}</span> suppliers
+            </div>
+            <div class="flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Previous</a>
+                {% endif %}
+
+                <span class="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg font-bold">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4" @click.outside="deleteModalOpen = false">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <i data-lucide="trash-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Delete Supplier</h3>
+                    <p class="text-xs text-slate-400">Remove vendor registration</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300">Are you sure you want to permanently delete supplier <span class="font-bold text-rose-400" x-text="activeSupName"></span>?</p>
+            <form :action="'/suppliers/' + activeSupId + '/delete/'" method="POST" class="flex justify-end gap-2.5 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20">Delete Supplier</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

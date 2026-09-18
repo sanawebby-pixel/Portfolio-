@@ -1,3 +1,359 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Finance Dashboard{% endblock %}
-{% block content %}<div class="p-6">Finance Dashboard</div>{% endblock %}
+{% load static %}
+
+{% block title %}Finance & Treasury Dashboard - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-cyan-400">Finance & Accounts</span>
+                <span>/</span>
+                <span class="text-slate-200">Treasury & Budgets</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="landmark" class="w-6 h-6"></i>
+                </div>
+                Finance & Treasury Management
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Real-time welfare fund balances, annual budget utilization, treasury transactions ledger, and cash outflows.</p>
+        </div>
+
+        <!-- Year Switcher & Action Buttons -->
+        <div class="flex items-center flex-wrap gap-2.5">
+            <!-- Year Selector -->
+            <form method="GET" action="{% url 'finance_dashboard' %}" class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                <span class="text-[11px] text-slate-400 font-semibold uppercase">FY:</span>
+                <select name="year" onchange="this.form.submit()" class="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none cursor-pointer">
+                    {% for y in available_years %}
+                    <option value="{{ y }}" {% if current_year == y %}selected{% endif %} class="bg-slate-900 text-white">{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <a href="{% url 'budget_create' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="piggy-bank" class="w-4 h-4 text-cyan-400"></i>
+                New Budget
+            </a>
+
+            <a href="{% url 'transaction_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Record Transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Total Budget -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Fund Budget</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-white font-mono">Rs. {{ total_budget|floatformat:0 }}</div>
+                <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded-md">FY {{ current_year }}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Board Allocated</div>
+        </div>
+
+        <!-- Paid Medical Claims -->
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Paid Claims</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-emerald-400 font-mono">Rs. {{ paid_claims|floatformat:0 }}</div>
+                <span class="text-[10px] text-emerald-400 font-medium bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.5 rounded-md">Claims</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Disbursed to Staff</div>
+        </div>
+
+        <!-- Direct Bills Paid -->
+        <div class="bg-slate-900/90 border border-blue-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Direct Bills</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-blue-400 font-mono">Rs. {{ paid_bills|floatformat:0 }}</div>
+                <span class="text-[10px] text-blue-400 font-medium bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.5 rounded-md">Vouchers</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Hospitals & Vendors</div>
+        </div>
+
+        <!-- Treasury Inflow -->
+        <div class="bg-slate-900/90 border border-teal-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-teal-400 uppercase tracking-wider">Treasury Inflow</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-lg font-bold text-teal-300 font-mono">Rs. {{ treasury_inflow|floatformat:0 }}</div>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Grants & Receipts</div>
+        </div>
+
+        <!-- Remaining Balance -->
+        <div class="bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">Remaining Fund</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-cyan-300 font-mono">Rs. {{ remaining_budget|floatformat:0 }}</div>
+                <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded-md">Available</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Uncommitted Balance</div>
+        </div>
+
+        <!-- Overall Utilization -->
+        <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Utilization Rate</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-amber-400 font-mono">{{ budget_utilization_pct }}%</div>
+                <span class="text-[10px] {% if budget_utilization_pct > 85 %}text-rose-400 bg-rose-950/60{% else %}text-emerald-400 bg-emerald-950/60{% endif %} px-1.5 py-0.5 rounded-md font-semibold">
+                    {% if budget_utilization_pct > 85 %}High{% else %}On Track{% endif %}
+                </span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-cyan-500 to-amber-500 h-1.5 rounded-full" style="width: {{ budget_utilization_pct }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Charts & Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Monthly Cash Outflow Trend (Chart.js) -->
+        <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="text-sm font-bold text-white">Monthly Welfare Disbursement Trend (FY {{ current_year }})</h3>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-semibold">
+                    <span class="flex items-center gap-1.5 text-cyan-400">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> Medical Claims
+                    </span>
+                    <span class="flex items-center gap-1.5 text-purple-400">
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Hospital Invoices
+                    </span>
+                </div>
+            </div>
+            <div class="h-64 relative">
+                <canvas id="disbursementTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick Treasury Actions & Financial Status -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+                <div class="flex items-center gap-2 pb-3 border-b border-slate-800">
+                    <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
+                    <h3 class="text-sm font-bold text-white">Liquidity & Cash Position</h3>
+                </div>
+                <div class="mt-4 space-y-3 text-xs">
+                    <div class="flex justify-between items-center p-3 bg-slate-950/80 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Net Treasury Liquidity</span>
+                        <span class="font-mono font-bold text-sm {% if net_treasury_cash >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                            Rs. {{ net_treasury_cash|floatformat:2 }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center p-3 bg-slate-950/80 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Pending Claim Approvals</span>
+                        <span class="font-mono font-bold text-amber-400">Rs. {{ pending_claim_payments|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center p-3 bg-slate-950/80 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Pending Vendor Bills</span>
+                        <span class="font-mono font-bold text-blue-400">Rs. {{ pending_bills|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fast Navigation Links -->
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                <a href="{% url 'budget_list' %}?year={{ current_year }}" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="piggy-bank" class="w-4 h-4 text-cyan-400"></i> Budgets
+                </a>
+                <a href="{% url 'transaction_list' %}" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="list" class="w-4 h-4 text-emerald-400"></i> Transactions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Departmental Budgets Breakdown -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-5 h-5 text-cyan-400"></i>
+                <h3 class="text-sm font-bold text-white">Departmental Budget Allocations & Utilization</h3>
+            </div>
+            <a href="{% url 'budget_list' %}?year={{ current_year }}" class="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1">
+                View All Budgets <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for item in dept_budget_data %}
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-white">{{ item.dept_name }}</div>
+                        <div class="text-[10px] text-cyan-400 font-medium">{{ item.budget.category }} Fund</div>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if item.percentage >= 100 %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% elif item.percentage >= 80 %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% else %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% endif %}">
+                        {{ item.percentage }}%
+                    </span>
+                </div>
+
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div class="{% if item.percentage >= 100 %}bg-rose-500{% elif item.percentage >= 80 %}bg-amber-500{% else %}bg-emerald-500{% endif %} h-1.5 rounded-full" style="width: {{ item.percentage }}%"></div>
+                </div>
+
+                <div class="flex justify-between text-[11px] font-mono text-slate-400 pt-1">
+                    <span>Used: <strong class="text-slate-200">Rs. {{ item.used|floatformat:0 }}</strong></span>
+                    <span>Allocated: <strong class="text-slate-200">Rs. {{ item.allocated|floatformat:0 }}</strong></span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-6 text-slate-500 text-xs">
+                No departmental budget allocations set for FY {{ current_year }}. 
+                <a href="{% url 'budget_create' %}" class="text-cyan-400 hover:underline">Create a budget allocation now</a>.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Treasury Transactions Ledger -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm space-y-0">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="arrow-left-right" class="w-5 h-5 text-cyan-400"></i>
+                <h3 class="text-sm font-bold text-white">Recent Treasury Transactions Ledger</h3>
+            </div>
+            <a href="{% url 'transaction_list' %}" class="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1">
+                View Full Ledger <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="px-4 py-3">Tx ID</th>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3 text-center">Type</th>
+                        <th class="px-4 py-3">Account & Reference</th>
+                        <th class="px-4 py-3">Category / Description</th>
+                        <th class="px-4 py-3 text-right">Amount (PKR)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for tx in recent_transactions %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="px-4 py-3 font-mono font-bold text-white">{{ tx.transaction_id }}</td>
+                        <td class="px-4 py-3 font-mono text-slate-400">{{ tx.date|date:"d M, Y" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if tx.transaction_type == 'Income' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Inflow (+)
+                            </span>
+                            {% elif tx.transaction_type == 'Refund' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Refund
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                Outflow (-)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-slate-200 font-medium">{{ tx.account }}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">{{ tx.reference_number|default:tx.payment_method }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-slate-200">{{ tx.category }}</div>
+                            {% if tx.description %}
+                            <div class="text-[10px] text-slate-400 truncate max-w-xs">{{ tx.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono font-bold">
+                            <span class="{% if tx.transaction_type == 'Income' or tx.transaction_type == 'Refund' %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                                {% if tx.transaction_type == 'Income' %}+{% else %}-{% endif %}Rs. {{ tx.amount|floatformat:2 }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-xs">
+                            No treasury transactions recorded yet. <a href="{% url 'transaction_create' %}" class="text-cyan-400 hover:underline">Record first transaction</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctx = document.getElementById('disbursementTrendChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ months_labels_json|safe }},
+                    datasets: [
+                        {
+                            label: 'Medical Claims (PKR)',
+                            data: {{ monthly_claims_json|safe }},
+                            backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Direct Hospital Bills (PKR)',
+                            data: {{ monthly_bills_json|safe }},
+                            backgroundColor: 'rgba(168, 85, 247, 0.7)',
+                            borderColor: '#a855f7',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(51, 65, 85, 0.2)' },
+                            ticks: { color: '#94a3b8', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 },
+                                callback: function(val) { return 'Rs. ' + (val/1000) + 'k'; }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#38bdf8',
+                            borderColor: '#334155',
+                            borderWidth: 1
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

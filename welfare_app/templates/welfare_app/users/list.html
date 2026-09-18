@@ -1,3 +1,255 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Users{% endblock %}
-{% block content %}<div class="p-6">Users</div>{% endblock %}
+{% load static %}
+
+{% block title %}User Management & Roles - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <span class="text-cyan-400">User & Roles</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="shield" class="w-7 h-7 text-cyan-400"></i>
+        System Users & Access Role Governance
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Manage ERP staff login accounts, security role permissions, department linkages, and account activations.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <a href="{% url 'user_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-semibold text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20">
+        <i data-lucide="user-plus" class="w-4 h-4"></i>
+        <span>Create User Account</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Ribbon -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Accounts</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-white font-mono">{{ total_users }}</div>
+        <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">Users</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Registered System Logins</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Active Logins</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-emerald-400 font-mono">{{ active_users }}</div>
+        <span class="text-[10px] text-emerald-400 font-medium bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.5 rounded">Active</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Can Authenticate</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-purple-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Administrators</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-purple-400 font-mono">{{ admin_users }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Full System Privileges</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-blue-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Welfare Officers</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-blue-400 font-mono">{{ officer_users }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Claims & HR Handlers</div>
+    </div>
+
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+    <form method="GET" action="{% url 'user_list' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      
+      <!-- Search Keyword -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Account</label>
+        <div class="relative">
+          <input type="text" name="q" value="{{ q }}" placeholder="Username, Name, Email..."
+                 class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+        </div>
+      </div>
+
+      <!-- Role Filter -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">System Role</label>
+        <select name="role" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Roles</option>
+          {% for r_code, r_name in roles %}
+          <option value="{{ r_code }}" {% if role_filter == r_code %}selected{% endif %}>{{ r_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Login Status</label>
+        <select name="status" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Accounts</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+          <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated / Blocked</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          <span>Filter</span>
+        </button>
+        <a href="{% url 'user_list' %}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors">
+          Reset
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3 px-4">User</th>
+            <th class="py-3 px-4">Assigned Role</th>
+            <th class="py-3 px-4">Contact Info</th>
+            <th class="py-3 px-4">Department / Employee</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-center">Registered Date</th>
+            <th class="py-3 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-xs">
+          {% for u in page_obj %}
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            
+            <!-- User & Avatar -->
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center font-bold text-xs">
+                  {{ u.username|make_list|first|upper }}
+                </div>
+                <div>
+                  <div class="font-bold text-white">{{ u.get_full_name|default:u.username }}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Role -->
+            <td class="py-3 px-4">
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold
+                {% if u.is_superuser or u.profile.role == 'Admin' %}bg-purple-950/60 border border-purple-800/40 text-purple-300
+                {% elif u.profile.role == 'Welfare Officer' %}bg-cyan-950/60 border border-cyan-800/40 text-cyan-300
+                {% elif u.profile.role == 'Finance Officer' %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-300
+                {% elif u.profile.role == 'HR Staff' %}bg-blue-950/60 border border-blue-800/40 text-blue-300
+                {% else %}bg-slate-800 border border-slate-700 text-slate-300{% endif %}">
+                {% if u.is_superuser %}Super Admin{% else %}{{ u.profile.role|default:'Staff User' }}{% endif %}
+              </span>
+            </td>
+
+            <!-- Contact -->
+            <td class="py-3 px-4 text-slate-300">
+              <div class="truncate max-w-xs">{{ u.email|default:'No Email' }}</div>
+              {% if u.profile.phone %}
+              <div class="text-[10px] text-slate-500 font-mono">{{ u.profile.phone }}</div>
+              {% endif %}
+            </td>
+
+            <!-- Department & Linked Staff -->
+            <td class="py-3 px-4 text-slate-300">
+              <div>{{ u.profile.department.name|default:'General / All' }}</div>
+              {% if u.profile.employee %}
+              <div class="text-[10px] text-cyan-400 font-mono">Linked: {{ u.profile.employee.name }} ({{ u.profile.employee.pl_number }})</div>
+              {% endif %}
+            </td>
+
+            <!-- Status Toggle -->
+            <td class="py-3 px-4 text-center">
+              <a href="{% url 'user_toggle_active' u.pk %}" 
+                 title="Click to toggle active state"
+                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors
+                  {% if u.is_active %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/80
+                  {% else %}bg-rose-950/60 border border-rose-800/40 text-rose-400 hover:bg-rose-900/80{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full {% if u.is_active %}bg-emerald-400{% else %}bg-rose-400{% endif %}"></span>
+                {% if u.is_active %}Active{% else %}Inactive{% endif %}
+              </a>
+            </td>
+
+            <!-- Joined Date -->
+            <td class="py-3 px-4 text-center text-slate-400 font-mono text-[11px]">
+              {{ u.date_joined|date:"d M, Y" }}
+            </td>
+
+            <!-- Action Buttons -->
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <a href="{% url 'user_update' u.pk %}" class="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors" title="Edit Profile">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'user_change_password' u.pk %}" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors" title="Reset Password">
+                  <i data-lucide="key" class="w-4 h-4"></i>
+                </a>
+                {% if u != request.user and not u.is_superuser %}
+                <a href="{% url 'user_delete' u.pk %}" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors" title="Delete Account">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="py-12 text-center text-slate-500">
+              <i data-lucide="users" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+              <p class="text-sm font-semibold">No user accounts found matching the criteria.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between">
+      <div class="text-xs text-slate-400">
+        Showing Page <span class="text-white font-bold">{{ page_obj.number }}</span> of <span class="text-white font-bold">{{ page_obj.paginator.num_pages }}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

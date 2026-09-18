@@ -1,3 +1,175 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Request Form{% endblock %}
-{% block content %}<div class="p-6">Form</div>{% endblock %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit PR #{{ pr.request_number }}{% else %}New Purchase Request{% endif %} - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <a href="{% url 'purchase_request_list' %}" class="hover:text-cyan-400 transition-colors">Purchase Requests</a>
+                <span>/</span>
+                <span class="text-slate-200">{% if is_edit %}Edit #{{ pr.request_number }}{% else %}New Requisition{% endif %}</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                </div>
+                {% if is_edit %}Edit Purchase Request #{{ pr.request_number }}{% else %}Submit Purchase Requisition{% endif %}
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Specify items required, estimated market cost, priority level, and justification for management approval.</p>
+        </div>
+        <div>
+            <a href="{% url 'purchase_request_list' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Requests
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Section 1: Item & Department Requirements -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="package" class="w-4 h-4"></i> 1. Item Details & Requesting Department
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Item Name -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Primary Item / Requisition Title <span class="text-cyan-400">*</span></label>
+                        {{ form.item_name }}
+                        {% if form.item_name.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.item_name.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Quantity -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Quantity Required <span class="text-cyan-400">*</span></label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.quantity.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Department -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Requesting Department</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.department.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Procurement Category</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Preferred Supplier -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Preferred Supplier (If known)</label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.supplier.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Financial Estimates & Priority -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="dollar-sign" class="w-4 h-4"></i> 2. Financial Estimates & Urgency
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Estimated Amount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Estimated Cost (PKR) <span class="text-cyan-400">*</span></label>
+                        {{ form.estimated_amount }}
+                        {% if form.estimated_amount.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.estimated_amount.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Priority -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Priority Level <span class="text-cyan-400">*</span></label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.priority.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Requisition Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.status.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Justification & Detailed Specifications -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> 3. Specifications & Reason for Purchase
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Items Description -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Item Specifications & Scope of Work <span class="text-cyan-400">*</span></label>
+                        {{ form.items_description }}
+                        {% if form.items_description.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.items_description.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Reason -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Clinical / Operational Justification</label>
+                        {{ form.reason }}
+                        {% if form.reason.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.reason.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Attachment -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Vendor Quotation / Proforma Invoice Attachment</label>
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                            {{ form.invoice_attachment }}
+                            {% if pr.invoice_attachment %}
+                            <div class="mt-2 text-xs text-slate-400 flex items-center gap-2">
+                                <i data-lucide="paperclip" class="w-4 h-4 text-emerald-400"></i>
+                                Current file: <a href="{{ pr.invoice_attachment.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono">{{ pr.invoice_attachment.name }}</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if form.invoice_attachment.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.invoice_attachment.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Remarks -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Internal Remarks</label>
+                        {{ form.remarks }}
+                        {% if form.remarks.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.remarks.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                <a href="{% url 'purchase_request_list' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    {% if is_edit %}Update Purchase Request{% else %}Submit Purchase Request{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

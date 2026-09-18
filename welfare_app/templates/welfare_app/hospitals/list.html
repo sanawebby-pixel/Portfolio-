@@ -1,15 +1,252 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Hospitals{% endblock %}
+
+{% block title %}Hospital & Healthcare Directory - Welfare ERP{% endblock %}
+
 {% block breadcrumb %}
-<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2 bg-slate-50 border-b border-slate-100">
-    <a href="{% url 'dashboard' %}" class="hover:text-blue-600">Dashboard</a>
-    <span class="mx-1">/</span>
-    <span class="text-slate-700 font-medium">Hospitals</span>
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">Hospitals & Clinics</span>
+    </div>
+    <span class="text-[11px] font-mono text-cyan-400">{{ stats.total_count }} Healthcare Facilities</span>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="p-6">
-    <h1 class="text-xl font-bold text-slate-800 mb-4">Hospitals</h1>
+<div class="space-y-6">
+
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <i data-lucide="building-2" class="w-6 h-6 text-cyan-400"></i>
+                Hospitals & Medical Centers
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Manage panel contracted hospitals, government healthcare facilities, and specialist diagnostic clinics.
+            </p>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <a href="{% url 'export_report' 'hospitals' %}?{{ request.GET.urlencode }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
+                Export CSV
+            </a>
+            <a href="{% url 'hospital_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/25 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Register Hospital
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary KPI Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Facilities</span>
+            <div class="text-2xl font-bold text-white font-mono mt-1">{{ stats.total_count }}</div>
+            <div class="text-[11px] text-cyan-400 mt-1">All Registered Medical Centers</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-cyan-500/30 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Panel Hospitals</span>
+            <div class="text-2xl font-bold text-cyan-400 font-mono mt-1">{{ stats.panel_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Contracted Corporate Rates</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Active Operations</span>
+            <div class="text-2xl font-bold text-emerald-400 font-mono mt-1">{{ stats.active_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Operational Healthcare Network</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-violet-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-violet-400 uppercase tracking-wider">Affiliated Doctors</span>
+            <div class="text-2xl font-bold text-violet-400 font-mono mt-1">{{ stats.total_doctors }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Verified Specialists</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'hospital_list' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end text-xs">
+            
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Search Facility</label>
+                <div class="relative">
+                    <input type="text" name="q" value="{{ q }}" placeholder="Name, Code, City, Contact Person..."
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+                </div>
+            </div>
+
+            <!-- Facility Type -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Facility Type</label>
+                <select name="type" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Types</option>
+                    <option value="Government" {% if hospital_type == 'Government' %}selected{% endif %}>Government Hospital</option>
+                    <option value="Private" {% if hospital_type == 'Private' %}selected{% endif %}>Private Hospital</option>
+                    <option value="Semi-Government" {% if hospital_type == 'Semi-Government' %}selected{% endif %}>Semi-Government</option>
+                    <option value="Military" {% if hospital_type == 'Military' %}selected{% endif %}>Military Hospital</option>
+                    <option value="Clinic" {% if hospital_type == 'Clinic' %}selected{% endif %}>Clinic / Diagnostic</option>
+                </select>
+            </div>
+
+            <!-- Panel Status -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Panel Status</label>
+                <select name="panel" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Panel Status</option>
+                    <option value="Panel" {% if panel == 'Panel' %}selected{% endif %}>Panel Contracted</option>
+                    <option value="Non-Panel" {% if panel == 'Non-Panel' %}selected{% endif %}>Non-Panel</option>
+                </select>
+            </div>
+
+            <!-- City Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">City</label>
+                <select name="city" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Cities</option>
+                    {% for c in cities %}
+                        <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                <a href="{% url 'hospital_list' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-3 rounded-xl border border-slate-700 transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Hospitals Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                        <th class="py-3 px-4">Code / Facility Name</th>
+                        <th class="py-3 px-4">Type & City</th>
+                        <th class="py-3 px-4">Contact Info</th>
+                        <th class="py-3 px-4 text-center">Panel Status</th>
+                        <th class="py-3 px-4 text-center">Contract Period</th>
+                        <th class="py-3 px-4 text-center">Affiliated Staff</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
+                    {% for hosp in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        
+                        <!-- Name & Code -->
+                        <td class="py-3.5 px-4">
+                            <a href="{% url 'hospital_detail' hosp.pk %}" class="font-bold text-white text-sm hover:text-cyan-400 transition-colors block">
+                                {{ hosp.name }}
+                            </a>
+                            <span class="font-mono text-[11px] text-cyan-500">{{ hosp.hospital_code|default:"HOSP-000" }}</span>
+                        </td>
+
+                        <!-- Type & City -->
+                        <td class="py-3.5 px-4">
+                            <div class="text-slate-200 font-medium">{{ hosp.hospital_type }}</div>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <i data-lucide="map-pin" class="w-3 h-3 text-slate-500"></i>
+                                {{ hosp.city|default:"General Area" }}
+                            </div>
+                        </td>
+
+                        <!-- Contact -->
+                        <td class="py-3.5 px-4">
+                            <div class="text-slate-200 font-mono">{{ hosp.contact_number|default:"N/A" }}</div>
+                            <div class="text-[11px] text-slate-400 truncate max-w-[160px] mt-0.5">
+                                {{ hosp.contact_person|default:hosp.email|default:"Administration" }}
+                            </div>
+                        </td>
+
+                        <!-- Panel Status -->
+                        <td class="py-3.5 px-4 text-center">
+                            {% if hosp.panel_status == 'Panel' %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
+                                    <i data-lucide="shield-check" class="w-3 h-3"></i> Panel
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                                    Non-Panel
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Contract Period -->
+                        <td class="py-3.5 px-4 text-center font-mono text-[11px]">
+                            {% if hosp.contract_start_date and hosp.contract_end_date %}
+                                <div class="text-slate-300">{{ hosp.contract_start_date|date:"d M Y" }}</div>
+                                <div class="text-slate-500 text-[10px]">to {{ hosp.contract_end_date|date:"d M Y" }}</div>
+                            {% else %}
+                                <span class="text-slate-500">Standing Facility</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Doctors & Visits Count -->
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="font-bold text-white">{{ hosp.doctors_count|default:0 }} Doctors</div>
+                            <div class="text-[10px] text-slate-400">{{ hosp.visits_count|default:0 }} Visits Logged</div>
+                        </td>
+
+                        <!-- Operational Status -->
+                        <td class="py-3.5 px-4 text-center">
+                            {% if hosp.status == 'Active' %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> {{ hosp.status }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'hospital_detail' hosp.pk %}" title="View Hospital File" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'hospital_update' hosp.pk %}" title="Edit Hospital Details" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 transition">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'hospital_delete' hosp.pk %}" onclick="return confirm('Are you sure you want to delete {{ hosp.name }}?');" title="Delete Hospital" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500 text-xs">
+                            <i data-lucide="building-2" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+                            No hospitals or medical centers found matching your query.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-slate-800">
+            {% include "welfare_app/components/pagination.html" %}
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}

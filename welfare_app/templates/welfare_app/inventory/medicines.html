@@ -1,3 +1,363 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Medicines{% endblock %}
-{% block content %}<div class="p-6">Medicines</div>{% endblock %}
+{% load static %}
+
+{% block title %}Pharmacy & Medicine Inventory - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{
+    deleteModalOpen: false,
+    activeMedId: null,
+    activeMedName: '',
+    openDelete(id, name) { this.activeMedId = id; this.activeMedName = name; this.deleteModalOpen = true; }
+}">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-cyan-400">Pharmacy & Supply</span>
+                <span>/</span>
+                <span class="text-slate-200">Medicine Formulary</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="pill" class="w-6 h-6"></i>
+                </div>
+                Pharmacy & Medicine Inventory
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Manage approved dispensary medicines, track batch numbers, expiry dates, safety stock thresholds, and stock valuation.</p>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center flex-wrap gap-2.5">
+            <a href="{% url 'stock_transactions' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+                Movement Ledger
+            </a>
+            <a href="{% url 'stock_in' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-600/30 transition shadow-sm">
+                <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                Stock In (Receipt)
+            </a>
+            <a href="{% url 'stock_out' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-bold hover:bg-blue-600/30 transition shadow-sm">
+                <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                Stock Out (Dispense)
+            </a>
+            <a href="{% url 'medicine_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Add Medicine
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Total Items -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Formulary</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-white font-mono">{{ stats.total_count }}</div>
+                <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded-md">SKUs</span>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono mt-1">{{ stats.total_units }} Total Units</div>
+        </div>
+
+        <!-- Total Stock Value -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Inventory Valuation</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-lg font-bold text-cyan-300 font-mono">Rs. {{ stats.total_stock_value|floatformat:0 }}</div>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">At Unit Cost</div>
+        </div>
+
+        <!-- Low Stock Alert -->
+        <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Low Stock Alert</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-amber-400 font-mono">{{ stats.low_stock_count }}</div>
+                <span class="text-[10px] text-amber-400 font-medium bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded-md">Reorder</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Below Min Threshold</div>
+        </div>
+
+        <!-- Out of Stock -->
+        <div class="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Out of Stock</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-rose-400 font-mono">{{ stats.out_of_stock_count }}</div>
+                <span class="text-[10px] text-rose-400 font-medium bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.5 rounded-md">0 Units</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Immediate PO Req</div>
+        </div>
+
+        <!-- Expiring Soon (90 Days) -->
+        <div class="bg-slate-900/90 border border-orange-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-orange-400 uppercase tracking-wider">Expiring (90 Days)</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-orange-300 font-mono">{{ stats.expiring_count }}</div>
+                <span class="text-[10px] text-orange-400 font-medium bg-orange-950/60 border border-orange-800/40 px-1.5 py-0.5 rounded-md">Watch</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Prioritize Dispense</div>
+        </div>
+
+        <!-- Expired Items -->
+        <div class="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Expired Batches</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-xl font-bold text-rose-400 font-mono">{{ stats.expired_count }}</div>
+                <span class="text-[10px] text-rose-400 font-medium bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.5 rounded-md">Hazard</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">Quarantine / Return</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'medicine_list' %}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Medicine Formulary</label>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" name="q" value="{{ q }}" placeholder="Brand name, generic formula, batch #..." 
+                           class="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Dosage Form</label>
+                <select name="category" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Categories</option>
+                    {% for cat_val, cat_label in categories %}
+                    <option value="{{ cat_val }}" {% if category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Stock Status -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Stock & Expiry Filter</label>
+                <select name="stock" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Inventory</option>
+                    <option value="low" {% if stock_status == 'low' %}selected{% endif %}>⚠️ Low Stock Threshold</option>
+                    <option value="out_of_stock" {% if stock_status == 'out_of_stock' %}selected{% endif %}>🚫 Out of Stock (0)</option>
+                    <option value="expiring" {% if stock_status == 'expiring' %}selected{% endif %}>⏳ Expiring in 90 Days</option>
+                    <option value="expired" {% if stock_status == 'expired' %}selected{% endif %}>🛑 Expired Batches</option>
+                    <option value="in_stock" {% if stock_status == 'in_stock' %}selected{% endif %}>✅ Healthy Stock</option>
+                </select>
+            </div>
+
+            <!-- Supplier -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Supplier</label>
+                <select name="supplier" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Suppliers</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {% if supplier_id == s.id|stringformat:"i" %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                {% if q or category or stock_status or supplier_id %}
+                <a href="{% url 'medicine_list' %}" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold transition" title="Clear Filters">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Medicines Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="px-4 py-3.5">Code & Trade Name</th>
+                        <th class="px-4 py-3.5">Generic & Manufacturer</th>
+                        <th class="px-4 py-3.5">Form / Unit</th>
+                        <th class="px-4 py-3.5">Batch & Expiry</th>
+                        <th class="px-4 py-3.5 text-right">Unit Cost</th>
+                        <th class="px-4 py-3.5 text-center">Available Stock</th>
+                        <th class="px-4 py-3.5 text-right">Stock Valuation</th>
+                        <th class="px-4 py-3.5">Supplier</th>
+                        <th class="px-4 py-3.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for med in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <!-- Name & ID -->
+                        <td class="px-4 py-3.5">
+                            <div class="font-bold text-white flex items-center gap-2">
+                                <i data-lucide="pill" class="w-4 h-4 text-cyan-400"></i>
+                                {{ med.name }}
+                            </div>
+                            <div class="text-[10px] text-cyan-400 font-mono mt-0.5">{{ med.medicine_id }}</div>
+                        </td>
+
+                        <!-- Generic & Manufacturer -->
+                        <td class="px-4 py-3.5">
+                            <div class="text-slate-200 font-medium">{{ med.generic_name|default:'-' }}</div>
+                            <div class="text-[10px] text-slate-400">{{ med.manufacturer|default:'General Pharma' }}</div>
+                        </td>
+
+                        <!-- Category / Unit -->
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ med.category }} ({{ med.unit }})
+                            </span>
+                        </td>
+
+                        <!-- Batch & Expiry -->
+                        <td class="px-4 py-3.5">
+                            {% if med.batch_number %}
+                            <div class="font-mono text-[11px] text-slate-300">Lot: {{ med.batch_number }}</div>
+                            {% endif %}
+                            {% if med.expiry_date %}
+                            <div class="text-[10px] font-mono mt-0.5 flex items-center gap-1">
+                                {% if med.is_expired %}
+                                <span class="text-rose-400 font-bold bg-rose-950/60 border border-rose-800/40 px-1 rounded flex items-center gap-0.5">
+                                    <i data-lucide="alert-octagon" class="w-3 h-3"></i> Exp: {{ med.expiry_date|date:"d M, Y" }}
+                                </span>
+                                {% elif med.is_expiring_soon %}
+                                <span class="text-amber-400 font-semibold bg-amber-950/60 border border-amber-800/40 px-1 rounded flex items-center gap-0.5">
+                                    <i data-lucide="clock" class="w-3 h-3"></i> Exp: {{ med.expiry_date|date:"d M, Y" }}
+                                </span>
+                                {% else %}
+                                <span class="text-slate-400">Exp: {{ med.expiry_date|date:"d M, Y" }}</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-slate-600">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Unit Cost -->
+                        <td class="px-4 py-3.5 text-right font-mono text-slate-300">
+                            Rs. {{ med.unit_cost|floatformat:2 }}
+                        </td>
+
+                        <!-- Quantity & Threshold Badge -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if med.quantity <= 0 %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> 0 (Out)
+                            </span>
+                            {% elif med.is_low_stock %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> {{ med.quantity }} {{ med.unit }} (Low)
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                                <i data-lucide="check" class="w-3 h-3"></i> {{ med.quantity }} {{ med.unit }}
+                            </span>
+                            {% endif %}
+                            <div class="text-[9px] text-slate-500 mt-0.5">Min: {{ med.min_stock_level }}</div>
+                        </td>
+
+                        <!-- Stock Value -->
+                        <td class="px-4 py-3.5 text-right font-mono font-bold text-slate-200">
+                            Rs. {{ med.stock_value|floatformat:0 }}
+                        </td>
+
+                        <!-- Supplier -->
+                        <td class="px-4 py-3.5">
+                            {% if med.supplier %}
+                            <div class="text-slate-300 truncate max-w-xs">{{ med.supplier.name }}</div>
+                            {% else %}
+                            <span class="text-slate-600">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-4 py-3.5 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'stock_in' %}?medicine={{ med.id }}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 text-slate-300 hover:text-emerald-400 transition" title="Add Stock (Receipt)">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <a href="{% url 'stock_out' %}?medicine={{ med.id }}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-blue-950/60 text-slate-300 hover:text-blue-400 transition" title="Dispense Stock">
+                                    <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <a href="{% url 'medicine_update' med.id %}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition" title="Edit Medicine">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <button @click="openDelete({{ med.id }}, '{{ med.name }}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition" title="Delete">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-500">
+                                    <i data-lucide="pill" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-300">No medicines found matching filters.</p>
+                                <p class="text-xs text-slate-500 max-w-sm">Register new medicines or adjust safety stock criteria.</p>
+                                <a href="{% url 'medicine_create' %}" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New Medicine
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Showing <span class="font-bold text-slate-200">{{ page_obj.start_index }}</span> to <span class="font-bold text-slate-200">{{ page_obj.end_index }}</span> of <span class="font-bold text-slate-200">{{ page_obj.paginator.count }}</span> items
+            </div>
+            <div class="flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if stock_status %}&stock={{ stock_status }}{% endif %}{% if supplier_id %}&supplier={{ supplier_id }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Previous</a>
+                {% endif %}
+
+                <span class="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg font-bold">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if stock_status %}&stock={{ stock_status }}{% endif %}{% if supplier_id %}&supplier={{ supplier_id }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4" @click.outside="deleteModalOpen = false">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <i data-lucide="trash-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Delete Medicine Record</h3>
+                    <p class="text-xs text-slate-400">Permanent formulary removal</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300">Are you sure you want to remove <span class="font-bold text-rose-400" x-text="activeMedName"></span> from pharmacy inventory?</p>
+            <form :action="'/medicines/' + activeMedId + '/delete/'" method="POST" class="flex justify-end gap-2.5 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20">Delete Medicine</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

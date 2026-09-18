@@ -1,3 +1,306 @@
-{% extends "welfare_app/base.html" %}
-{% block title %}Claim Form{% endblock %}
-{% block content %}<div class="p-6">Form</div>{% endblock %}
+﻿{% extends "welfare_app/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Factory Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'claim_list' %}" class="hover:text-cyan-400 transition-colors">Claims</a>
+        <span>/</span>
+        <span class="text-cyan-400">{% if claim %}Edit Claim{% else %}New Claim{% endif %}</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        {{ title }}
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Itemize fees and submit medical expense claim for welfare department review and audit.</p>
+    </div>
+    <a href="{% url 'claim_list' %}" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      Back to Claims
+    </a>
+  </div>
+
+  {% if form.errors %}
+    <div class="p-4 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs space-y-1 shadow-md">
+      <div class="font-bold flex items-center gap-2 text-rose-300">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        Please correct the errors in the form:
+      </div>
+      <ul class="list-disc pl-5 space-y-0.5">
+        {% for field, errs in form.errors.items %}
+          <li><strong>{{ field|capfirst }}:</strong> {{ errs|join:", " }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-6" id="claim-form">
+    {% csrf_token %}
+
+    <!-- 1. Employee & Patient Section -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-800/60 flex items-center justify-center text-cyan-400 font-bold text-xs">1</div>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Employee & Beneficiary Selection</h2>
+        </div>
+        <span class="text-[11px] text-slate-500">Beneficiary Eligibility Check</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Employee Selection -->
+        <div class="md:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+            Employee <span class="text-rose-400">*</span>
+          </label>
+          {{ form.employee }}
+          <span class="text-[10px] text-slate-500 mt-1 block">Select employee filing or claiming</span>
+        </div>
+
+        <!-- Dependent / Beneficiary Selection -->
+        <div class="md:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+            Patient / Family Member (Optional)
+          </label>
+          {{ form.dependent }}
+          <span class="text-[10px] text-slate-500 mt-1 block">Leave blank if claim is for employee self</span>
+        </div>
+
+        <!-- Linked Visit -->
+        <div class="md:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+            Linked Hospital Consultation (Optional)
+          </label>
+          {{ form.hospital_visit }}
+          <span class="text-[10px] text-slate-500 mt-1 block">Attach to pre-logged hospital consultation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Medical Facility & Treatment Details -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-blue-950 border border-blue-800/60 flex items-center justify-center text-blue-400 font-bold text-xs">2</div>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Medical Facility & Treatment Details</h2>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Hospital / Clinic</label>
+          {{ form.hospital }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Attending Doctor</label>
+          {{ form.doctor }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Claim Category</label>
+          {{ form.claim_type }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Treatment Date</label>
+          {{ form.treatment_date }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Hospital Bill / Invoice #</label>
+          {{ form.bill_number }}
+        </div>
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Bill Date</label>
+          {{ form.bill_date }}
+        </div>
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Claim Submission Date</label>
+          {{ form.claim_date }}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Medical Diagnosis / Chief Complaint</label>
+        {{ form.diagnosis }}
+      </div>
+    </div>
+
+    <!-- 3. Itemized Fee Breakdown (Real-time Calculator) -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-800/80 pb-3 gap-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 font-bold text-xs">3</div>
+          <div>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Itemized Fee Breakdown & Auto-Calculations</h2>
+            <div class="text-[11px] text-slate-400">Enter component costs. The total bill and net welfare contribution update automatically.</div>
+          </div>
+        </div>
+        <div class="bg-emerald-950/60 border border-emerald-800/40 px-3 py-1.5 rounded-lg flex items-center gap-3 self-start">
+          <span class="text-[11px] text-slate-400 uppercase font-semibold">Total Bill:</span>
+          <span id="live-total-display" class="font-mono text-base font-bold text-emerald-400">Rs. 0.00</span>
+        </div>
+      </div>
+
+      <!-- Itemized Inputs -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Doctor Fee (Rs.)</label>
+          {{ form.doctor_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Doctor Dues (Rs.)</label>
+          {{ form.doctor_dues }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Lab / Diagnostic Fee (Rs.)</label>
+          {{ form.lab_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Medicine Fee (Rs.)</label>
+          {{ form.medicine_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Admission / Bed Fee (Rs.)</label>
+          {{ form.admission_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Procedure / Surgery (Rs.)</label>
+          {{ form.procedure_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Other Hospital Charges (Rs.)</label>
+          {{ form.other_fee }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-rose-300 mb-1">Employee Co-Pay (Rs.)</label>
+          {{ form.employee_contribution }}
+        </div>
+      </div>
+
+      <!-- Totals & Welfare Fund Contribution Calculation Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/80 bg-slate-950/40 p-4 rounded-lg">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Claimable Amount (Rs.)</label>
+          {{ form.claimable_amount }}
+          <span class="text-[10px] text-slate-500 mt-0.5 block">Total Bill - Employee Co-pay</span>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-cyan-300 mb-1">Welfare Fund Contribution (Rs.)</label>
+          {{ form.welfare_contribution }}
+          <span class="text-[10px] text-slate-500 mt-0.5 block">Requested from factory welfare treasury</span>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-emerald-400 mb-1">Approved Amount (Rs.)</label>
+          {{ form.approved_amount }}
+          <span class="text-[10px] text-slate-500 mt-0.5 block">Set during welfare officer / manager review</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Supporting Documents & Status -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-purple-950 border border-purple-800/60 flex items-center justify-center text-purple-400 font-bold text-xs">4</div>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Supporting Documents & Justification</h2>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Attach Bill / Prescription / Report</label>
+          {{ form.supporting_documents }}
+          {% if claim.supporting_documents %}
+            <div class="text-[11px] text-cyan-400 mt-1">
+              Current file: <a href="{{ claim.supporting_documents.url }}" target="_blank" class="underline hover:text-cyan-300">View Document</a>
+            </div>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Initial Approval Status</label>
+          {{ form.claim_status }}
+          <span class="text-[10px] text-slate-500 mt-1 block">New claims default to Pending review</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Remarks / Case Justification</label>
+        {{ form.remarks }}
+      </div>
+    </div>
+
+    <!-- Form Actions Bar -->
+    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-4 rounded-xl shadow-sm">
+      <a href="{% url 'claim_list' %}" class="px-5 py-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors">
+        Cancel
+      </a>
+      <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white transition-all shadow-lg shadow-cyan-500/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+        Save Medical Claim
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const feeFields = ['doctor_fee', 'doctor_dues', 'lab_fee', 'medicine_fee', 'admission_fee', 'procedure_fee', 'other_fee'];
+  const employeeContribField = document.getElementById('id_employee_contribution');
+  const claimableField = document.getElementById('id_claimable_amount');
+  const welfareContribField = document.getElementById('id_welfare_contribution');
+  const liveTotalDisplay = document.getElementById('live-total-display');
+
+  function calculateTotals() {
+    let total = 0;
+    feeFields.forEach(id => {
+      const el = document.getElementById('id_' + id);
+      if (el && el.value) {
+        const val = parseFloat(el.value);
+        if (!isNaN(val)) total += val;
+      }
+    });
+
+    const empContrib = (employeeContribField && employeeContribField.value) ? (parseFloat(employeeContribField.value) || 0) : 0;
+    const claimable = Math.max(0, total - empContrib);
+
+    if (liveTotalDisplay) {
+      liveTotalDisplay.textContent = 'Rs. ' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    if (claimableField) {
+      claimableField.value = claimable.toFixed(2);
+    }
+    if (welfareContribField) {
+      welfareContribField.value = claimable.toFixed(2);
+    }
+  }
+
+  feeFields.forEach(id => {
+    const el = document.getElementById('id_' + id);
+    if (el) {
+      el.addEventListener('input', calculateTotals);
+      el.addEventListener('change', calculateTotals);
+    }
+  });
+
+  if (employeeContribField) {
+    employeeContribField.addEventListener('input', calculateTotals);
+    employeeContribField.addEventListener('change', calculateTotals);
+  }
+
+  calculateTotals();
+});
+</script>
+{% endblock %}

@@ -1,3 +1,261 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Search Results{% endblock %}
-{% block content %}<div class="p-6">Results</div>{% endblock %}
+{% load static %}
+
+{% block title %}Search Results for "{{ q }}" - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ currentTab: '{{ tab|default:'all' }}' }">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <span class="text-cyan-400">Global Search</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="search" class="w-7 h-7 text-cyan-400"></i>
+        Search Results for <span class="text-cyan-400 font-mono">"{{ q }}"</span>
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Found <strong class="text-white">{{ total_results }}</strong> matching records across employees, claims, hospitals, medicines, bills, and budgets.</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="w-full sm:w-80">
+      <form action="{% url 'global_search' %}" method="GET" class="relative">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search again..."
+               class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+      </form>
+    </div>
+  </div>
+
+  <!-- Domain Navigation Tabs -->
+  <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800 custom-scrollbar">
+    <button @click="currentTab = 'all'" 
+            :class="currentTab === 'all' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <span>All Records</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ total_results }}</span>
+    </button>
+
+    {% if counts.employees %}
+    <button @click="currentTab = 'employees'" 
+            :class="currentTab === 'employees' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <i data-lucide="users" class="w-3.5 h-3.5"></i>
+      <span>Employees</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.employees }}</span>
+    </button>
+    {% endif %}
+
+    {% if counts.claims %}
+    <button @click="currentTab = 'claims'" 
+            :class="currentTab === 'claims' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <i data-lucide="file-heart" class="w-3.5 h-3.5"></i>
+      <span>Claims</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.claims }}</span>
+    </button>
+    {% endif %}
+
+    {% if counts.hospitals %}
+    <button @click="currentTab = 'hospitals'" 
+            :class="currentTab === 'hospitals' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+      <span>Hospitals</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.hospitals }}</span>
+    </button>
+    {% endif %}
+
+    {% if counts.medicines %}
+    <button @click="currentTab = 'medicines'" 
+            :class="currentTab === 'medicines' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <i data-lucide="pill" class="w-3.5 h-3.5"></i>
+      <span>Pharmacy Medicines</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.medicines }}</span>
+    </button>
+    {% endif %}
+
+    {% if counts.bills %}
+    <button @click="currentTab = 'bills'" 
+            :class="currentTab === 'bills' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
+            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
+      <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+      <span>Bills & Invoices</span>
+      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.bills }}</span>
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Results Sections -->
+  <div class="space-y-6">
+
+    <!-- 1. Employees Section -->
+    {% if results.employees %}
+    <div x-show="currentTab === 'all' || currentTab === 'employees'" class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          Matched Employees ({{ counts.employees }})
+        </h2>
+        <a href="{% url 'employee_list' %}?q={{ q }}" class="text-xs text-slate-400 hover:text-white font-semibold">View All &rarr;</a>
+      </div>
+      <div class="divide-y divide-slate-800/60 text-xs">
+        {% for emp in results.employees %}
+        <div class="p-4 hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center font-bold text-xs font-mono">
+              {{ emp.pl_number }}
+            </div>
+            <div>
+              <a href="{% url 'employee_detail' emp.pk %}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                {{ emp.name }}
+              </a>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                Dept: {{ emp.department }} | Designation: {{ emp.designation|default:'Staff' }} | CNIC: {{ emp.cnic|default:'N/A' }}
+              </div>
+            </div>
+          </div>
+          <a href="{% url 'employee_detail' emp.pk %}" class="px-3 py-1 rounded bg-slate-800 text-cyan-400 hover:bg-cyan-600 hover:text-white text-xs font-semibold transition">
+            View Profile
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 2. Medical Claims Section -->
+    {% if results.claims %}
+    <div x-show="currentTab === 'all' || currentTab === 'claims'" class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+          <i data-lucide="file-heart" class="w-4 h-4"></i>
+          Matched Medical Claims ({{ counts.claims }})
+        </h2>
+        <a href="{% url 'claim_list' %}?q={{ q }}" class="text-xs text-slate-400 hover:text-white font-semibold">View All &rarr;</a>
+      </div>
+      <div class="divide-y divide-slate-800/60 text-xs">
+        {% for claim in results.claims %}
+        <div class="p-4 hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <a href="{% url 'claim_detail' claim.pk %}" class="font-mono font-bold text-cyan-400 hover:underline">
+                {{ claim.claim_number }}
+              </a>
+              <span class="text-white font-semibold">- {{ claim.employee.name }} ({{ claim.employee.department }})</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                {% if claim.claim_status == 'Approved' %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400
+                {% elif claim.claim_status == 'Paid' %}bg-teal-950/60 border border-teal-800/40 text-teal-400
+                {% else %}bg-amber-950/60 border border-amber-800/40 text-amber-400{% endif %}">
+                {{ claim.claim_status }}
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+              Treatment: {{ claim.treatment_date|date:"d M, Y" }} | Hospital: {{ claim.hospital.name|default:'General' }} | Invoiced: Rs. {{ claim.total_bill_amount|floatformat:0 }} | Approved: Rs. {{ claim.approved_amount|floatformat:0 }}
+            </div>
+          </div>
+          <a href="{% url 'claim_detail' claim.pk %}" class="px-3 py-1 rounded bg-slate-800 text-cyan-400 hover:bg-cyan-600 hover:text-white text-xs font-semibold transition">
+            View Claim
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. Hospitals Section -->
+    {% if results.hospitals %}
+    <div x-show="currentTab === 'all' || currentTab === 'hospitals'" class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
+          <i data-lucide="building-2" class="w-4 h-4"></i>
+          Matched Hospitals & Healthcare Centers ({{ counts.hospitals }})
+        </h2>
+        <a href="{% url 'hospital_list' %}?q={{ q }}" class="text-xs text-slate-400 hover:text-white font-semibold">View All &rarr;</a>
+      </div>
+      <div class="divide-y divide-slate-800/60 text-xs">
+        {% for hosp in results.hospitals %}
+        <div class="p-4 hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <a href="{% url 'hospital_detail' hosp.pk %}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                {{ hosp.name }}
+              </a>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                {% if hosp.panel_status == 'Panel' %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400
+                {% else %}bg-slate-800 border border-slate-700 text-slate-400{% endif %}">
+                {{ hosp.panel_status }}
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+              Code: {{ hosp.hospital_code|default:'N/A' }} | City: {{ hosp.city|default:'General' }} | Phone: {{ hosp.contact_number|default:'N/A' }}
+            </div>
+          </div>
+          <a href="{% url 'hospital_detail' hosp.pk %}" class="px-3 py-1 rounded bg-slate-800 text-cyan-400 hover:bg-cyan-600 hover:text-white text-xs font-semibold transition">
+            View Facility
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 4. Pharmacy Medicines Section -->
+    {% if results.medicines %}
+    <div x-show="currentTab === 'all' || currentTab === 'medicines'" class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+          <i data-lucide="pill" class="w-4 h-4"></i>
+          Matched Pharmacy Medicines & Inventory ({{ counts.medicines }})
+        </h2>
+        <a href="{% url 'medicine_list' %}?q={{ q }}" class="text-xs text-slate-400 hover:text-white font-semibold">View All &rarr;</a>
+      </div>
+      <div class="divide-y divide-slate-800/60 text-xs">
+        {% for med in results.medicines %}
+        <div class="p-4 hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white">{{ med.name }}</span>
+              <span class="text-[10px] text-slate-400 font-mono">({{ med.generic_name|default:med.category }})</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+              Batch: {{ med.batch_number|default:'N/A' }} | In-Stock: {{ med.quantity }} {{ med.unit }} | Cost: Rs. {{ med.unit_cost|floatformat:0 }}
+            </div>
+          </div>
+          <a href="{% url 'medicine_update' med.pk %}" class="px-3 py-1 rounded bg-slate-800 text-cyan-400 hover:bg-cyan-600 hover:text-white text-xs font-semibold transition">
+            View Medicine
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if total_results == 0 %}
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-12 text-center text-slate-500">
+      <i data-lucide="search-x" class="w-12 h-12 mx-auto text-slate-600 mb-3"></i>
+      <p class="text-base font-bold text-white">No records found for "{{ q }}"</p>
+      <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+        Try searching by employee name, employee PL#, claim number, hospital name, medicine brand name, or invoice number.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

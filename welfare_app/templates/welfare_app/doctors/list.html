@@ -1,3 +1,215 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Doctors{% endblock %}
-{% block content %}<div class="p-6">Doctors</div>{% endblock %}
+{% load welfare_tags %}
+
+{% block title %}Medical Doctors & Specialists Directory - Welfare ERP{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">Doctors & Specialists</span>
+    </div>
+    <span class="text-[11px] font-mono text-cyan-400">{{ stats.total_count }} Verified Doctors</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <i data-lucide="stethoscope" class="w-6 h-6 text-violet-400"></i>
+                Doctors & Medical Specialists Registry
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Consultant physicians, surgeons, and affiliated panel healthcare practitioners.
+            </p>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <a href="{% url 'doctor_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-violet-500/25 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Register Doctor
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary KPI Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Practitioners</span>
+            <div class="text-2xl font-bold text-white font-mono mt-1">{{ stats.total_count }}</div>
+            <div class="text-[11px] text-violet-400 mt-1">Verified Medical Profiles</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Active Consultants</span>
+            <div class="text-2xl font-bold text-emerald-400 font-mono mt-1">{{ stats.active_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Available for OPD / IPD</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Panel Hospitals</span>
+            <div class="text-2xl font-bold text-cyan-400 font-mono mt-1">{{ stats.hospitals_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Affiliated Facilities</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Avg Consultation Fee</span>
+            <div class="text-2xl font-bold text-amber-400 font-mono mt-1">Rs. {{ stats.avg_fee|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Standard Scale Rate</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'doctor_list' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end text-xs">
+            
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Search Doctor</label>
+                <div class="relative">
+                    <input type="text" name="q" value="{{ q }}" placeholder="Doctor Name, Specialization, PMC Reg #..."
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+                </div>
+            </div>
+
+            <!-- Hospital Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Affiliated Hospital</label>
+                <select name="hospital" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
+                    <option value="">All Hospitals</option>
+                    {% for h in hospitals %}
+                        <option value="{{ h.id }}" {% if hospital_id == h.id|stringformat:"i" %}selected{% endif %}>{{ h.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Specialization Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Specialization</label>
+                <select name="specialization" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
+                    <option value="">All Specializations</option>
+                    {% for spec in specializations %}
+                        <option value="{{ spec }}" {% if specialization == spec %}selected{% endif %}>{{ spec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                <a href="{% url 'doctor_list' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-3 rounded-xl border border-slate-700 transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Doctors Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                        <th class="py-3 px-4">Doctor / Specialist</th>
+                        <th class="py-3 px-4">Medical Specialization</th>
+                        <th class="py-3 px-4">Affiliated Hospital</th>
+                        <th class="py-3 px-4">PMC / Registration #</th>
+                        <th class="py-3 px-4 text-right">Consultation Fee</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
+                    {% for doc in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        
+                        <!-- Name & Contact -->
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-white text-sm">{{ doc.name }}</div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                                {{ doc.contact|default:doc.email|default:"Phone on file" }}
+                            </div>
+                        </td>
+
+                        <!-- Specialization -->
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/80 text-violet-300 border border-violet-800/60">
+                                {{ doc.specialization|default:"General Medicine" }}
+                            </span>
+                        </td>
+
+                        <!-- Hospital -->
+                        <td class="py-3.5 px-4">
+                            {% if doc.hospital %}
+                                <a href="{% url 'hospital_detail' doc.hospital.pk %}" class="font-medium text-cyan-400 hover:underline">
+                                    {{ doc.hospital.name }}
+                                </a>
+                                <div class="text-[10px] text-slate-500">{{ doc.hospital.city|default:"General" }}</div>
+                            {% else %}
+                                <span class="text-slate-500">Independent Consultant</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Registration Number -->
+                        <td class="py-3.5 px-4 font-mono font-medium text-slate-300">
+                            {{ doc.registration_number|default:"PMC Verified" }}
+                        </td>
+
+                        <!-- Fee -->
+                        <td class="py-3.5 px-4 text-right font-mono font-bold text-white">
+                            Rs. {{ doc.consultation_fee|floatformat:0 }}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="py-3.5 px-4 text-center">
+                            {% if doc.status == 'Active' %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'doctor_update' doc.pk %}" title="Edit Profile" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 transition">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{% url 'doctor_delete' doc.pk %}" onclick="return confirm('Remove doctor {{ doc.name }}?');" title="Delete" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-500 text-xs">
+                            <i data-lucide="stethoscope" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+                            No doctors or specialists found matching your search.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-slate-800">
+            {% include "welfare_app/components/pagination.html" %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

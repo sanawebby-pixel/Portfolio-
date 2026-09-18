@@ -1,3 +1,282 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Budgets{% endblock %}
-{% block content %}<div class="p-6">Budgets</div>{% endblock %}
+{% load static %}
+
+{% block title %}Departmental & Welfare Budgets - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{
+    deleteModalOpen: false,
+    activeBudgetId: null,
+    activeBudgetTitle: '',
+    openDelete(id, title) { this.activeBudgetId = id; this.activeBudgetTitle = title; this.deleteModalOpen = true; }
+}">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <a href="{% url 'finance_dashboard' %}" class="hover:text-cyan-400 transition-colors">Finance & Treasury</a>
+                <span>/</span>
+                <span class="text-slate-200">Budgets</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                </div>
+                Departmental & Welfare Budgets
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Manage annual fiscal welfare fund allocations, track department burn rates, and ensure compliance with welfare limits.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'finance_dashboard' %}?year={{ year }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+                Treasury Dashboard
+            </a>
+            <a href="{% url 'budget_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                New Allocation
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Allocated (FY {{ year }})</div>
+            <div class="mt-2 text-xl font-bold text-white font-mono">Rs. {{ stats.total_allocated|floatformat:0 }}</div>
+            <div class="text-[11px] text-cyan-400 mt-1">{{ stats.active_count }} Active Funds</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Total Utilized / Spent</div>
+            <div class="mt-2 text-xl font-bold text-amber-400 font-mono">Rs. {{ stats.total_used|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Claims & Direct Bills</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Available Fund Balance</div>
+            <div class="mt-2 text-xl font-bold text-emerald-400 font-mono">Rs. {{ stats.total_remaining|floatformat:0 }}</div>
+            <div class="text-[11px] text-emerald-400/80 mt-1">Uncommitted</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-purple-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Overall Burn Rate</div>
+            <div class="mt-2 text-xl font-bold text-purple-300 font-mono">{{ stats.overall_pct }}%</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                <div class="bg-purple-500 h-1.5 rounded-full" style="width: {{ stats.overall_pct }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'budget_list' %}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <!-- Fiscal Year -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Fiscal Year</label>
+                <select name="year" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    {% for y in available_years %}
+                    <option value="{{ y }}" {% if year == y %}selected{% endif %}>FY {{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Department -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Department</label>
+                <select name="department" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                    <option value="{{ d.id }}" {% if dept_id == d.id|stringformat:"i" %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Fund Category</label>
+                <select name="category" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Fund Types</option>
+                    {% for cat_val, cat_label in categories %}
+                    <option value="{{ cat_val }}" {% if category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Apply Filters
+                </button>
+                {% if dept_id or category %}
+                <a href="{% url 'budget_list' %}?year={{ year }}" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold transition" title="Reset Filters">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Budgets Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="px-4 py-3.5">Department / Target</th>
+                        <th class="px-4 py-3.5">Fund Category</th>
+                        <th class="px-4 py-3.5">Year</th>
+                        <th class="px-4 py-3.5 text-right">Allocated (PKR)</th>
+                        <th class="px-4 py-3.5 text-right">Utilized (PKR)</th>
+                        <th class="px-4 py-3.5 text-right">Remaining (PKR)</th>
+                        <th class="px-4 py-3.5 text-center">Utilization</th>
+                        <th class="px-4 py-3.5 text-center">Status</th>
+                        <th class="px-4 py-3.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for budget in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <!-- Department -->
+                        <td class="px-4 py-3.5">
+                            <div class="font-bold text-white flex items-center gap-2">
+                                <i data-lucide="building-2" class="w-4 h-4 text-cyan-400"></i>
+                                {% if budget.department %}{{ budget.department.name }}{% else %}<span class="text-cyan-400 font-semibold">General Welfare (All Depts)</span>{% endif %}
+                            </div>
+                            {% if budget.description %}
+                            <div class="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">{{ budget.description }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Category -->
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ budget.category }}
+                            </span>
+                        </td>
+
+                        <!-- Year -->
+                        <td class="px-4 py-3.5 font-mono font-semibold text-slate-300">
+                            FY {{ budget.year }}
+                        </td>
+
+                        <!-- Allocated -->
+                        <td class="px-4 py-3.5 text-right font-mono font-bold text-slate-200">
+                            Rs. {{ budget.allocated_amount|floatformat:0 }}
+                        </td>
+
+                        <!-- Utilized -->
+                        <td class="px-4 py-3.5 text-right font-mono font-bold text-amber-400">
+                            Rs. {{ budget.used_amount|floatformat:0 }}
+                        </td>
+
+                        <!-- Remaining -->
+                        <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-400">
+                            Rs. {{ budget.remaining_amount|floatformat:0 }}
+                        </td>
+
+                        <!-- Utilization Progress -->
+                        <td class="px-4 py-3.5">
+                            <div class="flex items-center gap-2 min-w-[100px]">
+                                <div class="flex-1 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                    <div class="{% if budget.utilization_percentage >= 100 %}bg-rose-500{% elif budget.utilization_percentage >= 80 %}bg-amber-500{% else %}bg-cyan-500{% endif %} h-1.5 rounded-full" 
+                                         style="width: {{ budget.utilization_percentage }}%"></div>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold {% if budget.utilization_percentage >= 100 %}text-rose-400{% elif budget.utilization_percentage >= 80 %}text-amber-400{% else %}text-slate-300{% endif %}">
+                                    {{ budget.utilization_percentage|floatformat:0 }}%
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if budget.is_active %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                Closed
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-4 py-3.5 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'budget_update' budget.id %}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition" title="Edit Budget">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <button @click="openDelete({{ budget.id }}, 'FY {{ budget.year }} {{ budget.department.name|default:'General' }} ({{ budget.category }})')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition" title="Delete">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-500">
+                                    <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-300">No budget allocations found for FY {{ year }}.</p>
+                                <p class="text-xs text-slate-500 max-w-sm">Create annual departmental budget ceilings to regulate claims spending.</p>
+                                <a href="{% url 'budget_create' %}" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Create Budget Allocation
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Showing <span class="font-bold text-slate-200">{{ page_obj.start_index }}</span> to <span class="font-bold text-slate-200">{{ page_obj.end_index }}</span> of <span class="font-bold text-slate-200">{{ page_obj.paginator.count }}</span> budgets
+            </div>
+            <div class="flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&year={{ year }}{% if dept_id %}&department={{ dept_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Previous</a>
+                {% endif %}
+
+                <span class="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg font-bold">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&year={{ year }}{% if dept_id %}&department={{ dept_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4" @click.outside="deleteModalOpen = false">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <i data-lucide="trash-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Delete Budget Allocation</h3>
+                    <p class="text-xs text-slate-400">Remove budget record</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300">Are you sure you want to remove budget record for <span class="font-semibold text-cyan-400" x-text="activeBudgetTitle"></span>?</p>
+            <form :action="'/finance/budgets/' + activeBudgetId + '/delete/'" method="POST" class="flex justify-end gap-2.5 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20">Delete Budget</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

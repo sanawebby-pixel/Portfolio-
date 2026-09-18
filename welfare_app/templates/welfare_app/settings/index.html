@@ -1,0 +1,304 @@
+{% extends "welfare_app/base.html" %}
+{% load static %}
+
+{% block title %}System Settings & Benefit Configuration - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ seedModalOpen: false }">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <span class="text-cyan-400">Settings & Rules</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="settings" class="w-7 h-7 text-cyan-400"></i>
+        System Settings & Benefit Policy Rules
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Configure company organizational departments, medical benefit coverage rules, hospital allowances, and ERP demo data.</p>
+    </div>
+
+    <!-- Quick Action / Demo Seeder Button -->
+    <div class="flex items-center gap-3">
+      {% if request.user.is_superuser %}
+      <button @click="seedModalOpen = true" 
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-amber-500/40 bg-amber-950/40 text-xs font-semibold text-amber-300 hover:bg-amber-900/60 hover:text-amber-200 transition-all shadow-sm">
+        <i data-lucide="database" class="w-4 h-4 text-amber-400"></i>
+        <span>Initialize Demo Data</span>
+      </button>
+      {% endif %}
+
+      <a href="{% url 'benefit_rule_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-semibold text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>New Benefit Rule</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Ribbon -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Departments</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-white font-mono">{{ config.departments_count }}</div>
+        <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">{{ config.active_departments }} Active</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Organizational Units</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Benefit Policies</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-emerald-400 font-mono">{{ config.benefit_rules_count }}</div>
+        <span class="text-[10px] text-emerald-400 font-medium bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.5 rounded">{{ config.active_rules }} Active</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Coverage Rules Active</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-blue-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Enrolled Staff</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-white font-mono">{{ config.total_employees }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Assigned Benefit Scales</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-purple-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Fiscal Year</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-xl font-bold text-purple-400 font-mono">{{ config.fiscal_year }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Current Active FY</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-teal-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-teal-400 uppercase tracking-wider">Base Currency</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-xl font-bold text-teal-400 font-mono">{{ config.default_currency_symbol }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Pakistani Rupee (PKR)</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Audit Security</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-sm font-bold text-emerald-400 font-mono flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ENABLED
+        </div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Full Change Logging</div>
+    </div>
+
+  </div>
+
+  <!-- Settings Configuration Hub Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    
+    <!-- 1. Departments Card -->
+    <div class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-200">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-cyan-950/60 border border-cyan-800/50 flex items-center justify-center text-cyan-400">
+            <i data-lucide="building" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Factory Departments</h3>
+            <p class="text-xs text-slate-400">{{ config.departments_count }} Registered Units</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+          Manage corporate & factory organizational departments (Assembly, Engineering, QA, Logistics, HR, Finance). Configure codes and active operational status.
+        </p>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+        <a href="{% url 'department_list' %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300">
+          <span>Manage Departments</span>
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+        <a href="{% url 'department_create' %}" class="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700">
+          + Add New
+        </a>
+      </div>
+    </div>
+
+    <!-- 2. Benefit Rules Card -->
+    <div class="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-200">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center text-emerald-400">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Benefit & Medical Rules</h3>
+            <p class="text-xs text-slate-400">{{ config.benefit_rules_count }} Configured Policies</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+          Define medical allowance ceilings, OPD consultation limits, percentage coverage for lab & medicine, and room rent caps per pay grade scale and department.
+        </p>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+        <a href="{% url 'benefit_rule_list' %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+          <span>Manage Policy Rules</span>
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+        <a href="{% url 'benefit_rule_create' %}" class="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700">
+          + Add Rule
+        </a>
+      </div>
+    </div>
+
+    <!-- 3. Demo Data & System Utilities -->
+    <div class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-200">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-amber-950/60 border border-amber-800/50 flex items-center justify-center text-amber-400">
+            <i data-lucide="database" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Demo Data & Setup</h3>
+            <p class="text-xs text-slate-400">Enterprise Seed Tool</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+          Populate realistic demo records including panel hospitals (Al-Shifa, City General), medical specialists, pharmacy batches, sample staff members, and fiscal budgets.
+        </p>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+        <button @click="seedModalOpen = true" class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300">
+          <span>Run Seeder Tool</span>
+          <i data-lucide="play" class="w-3.5 h-3.5"></i>
+        </button>
+        <span class="text-[10px] font-mono text-slate-500">Superuser Only</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Active Benefit Rules Preview -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          Active Healthcare Benefit Policy Rules
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">Policy limits currently enforced during claim approval workflows.</p>
+      </div>
+      <a href="{% url 'benefit_rule_list' %}" class="text-xs font-semibold text-cyan-400 hover:underline">
+        View All ({{ config.benefit_rules_count }}) &rarr;
+      </a>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3 px-4">Policy Rule Name</th>
+            <th class="py-3 px-4">Applicable Dept / Scale</th>
+            <th class="py-3 px-4 text-right">Annual Ceil (Rs)</th>
+            <th class="py-3 px-4 text-right">OPD Ceil (Rs)</th>
+            <th class="py-3 px-4 text-center">Lab / Med %</th>
+            <th class="py-3 px-4 text-right">Room / Day (Rs)</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-xs">
+          {% for rule in recent_rules %}
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3 px-4 font-semibold text-white">
+              <a href="{% url 'benefit_rule_update' rule.pk %}" class="text-cyan-400 hover:underline">{{ rule.name }}</a>
+            </td>
+            <td class="py-3 px-4 text-slate-300">
+              <div>{{ rule.department.name|default:'All Departments' }}</div>
+              <div class="text-[10px] text-slate-500 font-mono">{{ rule.grade_scale|default:'All Pay Scales' }}</div>
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">
+              Rs. {{ rule.annual_medical_limit|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-300">
+              Rs. {{ rule.opd_consultation_limit|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-center font-mono text-cyan-400">
+              {{ rule.lab_coverage_percent|floatformat:0 }}% / {{ rule.medicine_coverage_percent|floatformat:0 }}%
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-300">
+              Rs. {{ rule.room_per_day_limit|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                {% if rule.is_active %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400
+                {% else %}bg-slate-800 border border-slate-700 text-slate-400{% endif %}">
+                {% if rule.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <a href="{% url 'benefit_rule_update' rule.pk %}" class="text-xs text-slate-400 hover:text-cyan-400 font-semibold">Edit</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="py-8 text-center text-slate-500">
+              <p class="text-sm font-semibold">No benefit policy rules configured yet.</p>
+              <a href="{% url 'benefit_rule_create' %}" class="inline-block mt-2 text-xs font-semibold text-cyan-400 hover:underline">+ Add First Benefit Rule</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Demo Data Confirmation Modal -->
+  <div x-show="seedModalOpen" x-transition.opacity x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div @click.outside="seedModalOpen = false"
+         class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-950/80 border border-amber-700/60 flex items-center justify-center text-amber-400">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Initialize ERP Demo Data</h3>
+          <p class="text-xs text-slate-400">Factory Welfare ERP Sample Records</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        This operation will seed or synchronize the factory departments, panel hospitals (Al-Shifa Hospital, City General), doctor profiles, pharmacy medicines, test employees, and budgets.
+      </p>
+
+      <form method="POST" action="{% url 'seed_demo_data' %}" class="pt-2 flex items-center justify-end gap-2">
+        {% csrf_token %}
+        <button type="button" @click="seedModalOpen = false" 
+                class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-amber-600/30 transition">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span>Execute Seeder</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

@@ -1,3 +1,157 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Transaction Form{% endblock %}
-{% block content %}<div class="p-6">Form</div>{% endblock %}
+{% load static %}
+
+{% block title %}Record Treasury Transaction - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <a href="{% url 'transaction_list' %}" class="hover:text-cyan-400 transition-colors">Transactions</a>
+                <span>/</span>
+                <span class="text-slate-200">New Entry</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="arrow-left-right" class="w-6 h-6"></i>
+                </div>
+                Record Treasury & Cash Transaction
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Log bank allocations, claim payments, administrative expenses, or medical refunds.</p>
+        </div>
+        <div>
+            <a href="{% url 'transaction_list' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Transactions
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Section 1: Transaction Type & Amount -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="dollar-sign" class="w-4 h-4"></i> 1. Financial Classification & Amount
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Transaction Type -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Transaction Type <span class="text-cyan-400">*</span></label>
+                        {{ form.transaction_type }}
+                        {% if form.transaction_type.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.transaction_type.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Amount (PKR) <span class="text-cyan-400">*</span></label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.amount.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Transaction Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Transaction Date <span class="text-cyan-400">*</span></label>
+                        {{ form.date }}
+                        {% if form.date.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.date.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Category / Account Head -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Category / Accounting Head <span class="text-cyan-400">*</span></label>
+                        {{ form.category }}
+                        <p class="text-[10px] text-slate-500 mt-1">e.g. Monthly Welfare Grant, Hospital Panel Settlement, Medicine Bulk Purchase</p>
+                        {% if form.category.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Banking & Reference Details -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="landmark" class="w-4 h-4"></i> 2. Bank & Payment Execution Channel
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Payment Method -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Payment Method <span class="text-cyan-400">*</span></label>
+                        {{ form.payment_method }}
+                        {% if form.payment_method.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.payment_method.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Bank Account -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Bank / Treasury Account</label>
+                        {{ form.account }}
+                        {% if form.account.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.account.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Reference / Cheque # -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cheque / Tx / Deposit Slip #</label>
+                        {{ form.reference_number }}
+                        {% if form.reference_number.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.reference_number.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Linked Medical Claim -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Link to Specific Medical Claim (Optional)</label>
+                        {{ form.related_claim }}
+                        <p class="text-[10px] text-slate-500 mt-1">If this payment is tied to an employee medical claim voucher</p>
+                        {% if form.related_claim.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.related_claim.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Attachment & Description -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="paperclip" class="w-4 h-4"></i> 3. Voucher Slip & Description
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Transaction Description & Justification</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.description.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Attachment -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Deposit Slip / Bank Receipt / Payment Voucher Copy</label>
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                            {{ form.attachment }}
+                        </div>
+                        {% if form.attachment.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.attachment.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                <a href="{% url 'transaction_list' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    Post Transaction
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,3 +1,236 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Inventory Report{% endblock %}
-{% block content %}<div class="p-6">Report</div>{% endblock %}
+{% load static %}
+
+{% block title %}Pharmacy Stock & Valuation Report - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'report_index' %}" class="hover:text-cyan-400 transition-colors">Reports Hub</a>
+        <span>/</span>
+        <span class="text-cyan-400">Inventory Valuation</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="pill" class="w-7 h-7 text-cyan-400"></i>
+        Pharmacy Stock Valuation & Inventory Audit Report
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Pharmaceutical SKUs audit, batch stock valuations, reorder threshold alerts, and expiration risk monitoring.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <a href="{% url 'export_report' 'inventory' %}?format=csv&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm">
+        <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+        <span>Export CSV</span>
+      </a>
+      <a href="{% url 'export_report' 'inventory' %}?format=excel&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-800/60 bg-emerald-950/40 text-xs font-semibold text-emerald-400 hover:bg-emerald-900/60 transition-all shadow-sm">
+        <i data-lucide="sheet" class="w-4 h-4 text-emerald-400"></i>
+        <span>Export Excel (.xls)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Ribbon -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Catalogued SKUs</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-white font-mono">{{ total_items }}</div>
+        <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">Items</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Total Medicine Portfolio</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-teal-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-teal-400 uppercase tracking-wider">Total Stock Valuation</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-xl font-bold text-teal-400 font-mono">Rs. {{ total_stock_value|floatformat:0 }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">At Current Purchase Cost</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-amber-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Low Stock Warnings</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-amber-400 font-mono">{{ low_stock_count }}</div>
+        <span class="text-[10px] text-amber-400 font-medium bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded">Reorder</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Below Min Stock Threshold</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-rose-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Expiry Action Risk</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-2xl font-bold text-rose-400 font-mono">{{ expired_count|add:expiring_soon_count }}</div>
+        <span class="text-[10px] text-rose-400 font-medium bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.5 rounded">Alert</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">{{ expired_count }} Expired / {{ expiring_soon_count }} 90-Day</div>
+    </div>
+
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+    <form method="GET" action="{% url 'inventory_report' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      
+      <!-- Search Keyword -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Medicine</label>
+        <div class="relative">
+          <input type="text" name="q" value="{{ q }}" placeholder="Brand, Generic, Batch..."
+                 class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+        </div>
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Dosage Form / Category</label>
+        <select name="category" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Stock & Health Status</label>
+        <select name="status" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Inventory</option>
+          <option value="healthy" {% if status_filter == 'healthy' %}selected{% endif %}>Healthy / In-Stock</option>
+          <option value="low" {% if status_filter == 'low' %}selected{% endif %}>Low Stock Threshold</option>
+          <option value="expiring" {% if status_filter == 'expiring' %}selected{% endif %}>Expiring Soon (90 Days)</option>
+          <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired Stock</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          <span>Filter</span>
+        </button>
+        <a href="{% url 'inventory_report' %}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors">
+          Reset
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Medicine Inventory Table -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3 px-4">Item ID</th>
+            <th class="py-3 px-4">Medicine Name & Generic</th>
+            <th class="py-3 px-4">Category</th>
+            <th class="py-3 px-4 text-center">Batch #</th>
+            <th class="py-3 px-4 text-center">Expiry Date</th>
+            <th class="py-3 px-4 text-right">In-Stock Qty</th>
+            <th class="py-3 px-4 text-right">Unit Cost (Rs)</th>
+            <th class="py-3 px-4 text-right">Total Value (Rs)</th>
+            <th class="py-3 px-4 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-xs">
+          {% for row in page_obj %}
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3 px-4 font-mono font-bold text-cyan-400">
+              {{ row.medicine.medicine_id|default:'N/A' }}
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-semibold text-white">{{ row.medicine.name }}</div>
+              <div class="text-[10px] text-slate-400 font-mono">{{ row.medicine.generic_name|default:row.medicine.manufacturer }}</div>
+            </td>
+            <td class="py-3 px-4 text-slate-300">
+              <span class="inline-block px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300">
+                {{ row.medicine.category }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center font-mono text-slate-400 text-[11px]">
+              {{ row.medicine.batch_number|default:'N/A' }}
+            </td>
+            <td class="py-3 px-4 text-center font-mono text-[11px]">
+              {% if row.is_expired %}
+              <span class="text-rose-400 font-bold">{{ row.medicine.expiry_date|date:"d M, Y" }}</span>
+              {% elif row.is_expiring_soon %}
+              <span class="text-amber-400 font-semibold">{{ row.medicine.expiry_date|date:"d M, Y" }}</span>
+              {% else %}
+              <span class="text-slate-400">{{ row.medicine.expiry_date|date:"d M, Y"|default:'N/A' }}</span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold {% if row.is_low %}text-amber-400{% else %}text-slate-200{% endif %}">
+              {{ row.medicine.quantity }} {{ row.medicine.unit }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-300">
+              {{ row.medicine.unit_cost|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-teal-400">
+              {{ row.stock_value|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-center">
+              {% if row.is_expired %}
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-rose-950/60 border border-rose-800/40 text-rose-400">Expired</span>
+              {% elif row.is_low %}
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-amber-950/60 border border-amber-800/40 text-amber-400">Low Stock</span>
+              {% elif row.is_expiring_soon %}
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-purple-950/60 border border-purple-800/40 text-purple-400">Expiring Soon</span>
+              {% else %}
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-emerald-950/60 border border-emerald-800/40 text-emerald-400">Healthy</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="py-12 text-center text-slate-500">
+              <i data-lucide="pill" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+              <p class="text-sm font-semibold">No pharmacy items found matching filters.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between">
+      <div class="text-xs text-slate-400">
+        Showing Page <span class="text-white font-bold">{{ page_obj.number }}</span> of <span class="text-white font-bold">{{ page_obj.paginator.num_pages }}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

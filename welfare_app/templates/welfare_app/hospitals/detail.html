@@ -1,6 +1,326 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Hospital Detail{% endblock %}
+
+{% block title %}{{ hospital.name }} - Hospital Facility File - Welfare ERP{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-xs text-slate-400 px-4 sm:px-8 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span class="text-slate-600">/</span>
+        <a href="{% url 'hospital_list' %}" class="hover:text-cyan-400 transition-colors">Hospitals</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-semibold">{{ hospital.name }}</span>
+    </div>
+    <span class="text-[11px] font-mono text-cyan-400">{{ hospital.hospital_code|default:"HOSP-FILE" }}</span>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="p-6">Detail</div>
+<div class="space-y-6">
+
+    <!-- Hospital Master Header Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <div class="flex flex-wrap items-center gap-2.5 mb-2">
+                    <span class="font-mono text-xs font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-2.5 py-0.5 rounded-lg">
+                        {{ hospital.hospital_code|default:"HOSP-000" }}
+                    </span>
+                    
+                    {% if hospital.panel_status == 'Panel' %}
+                        <span class="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold bg-cyan-950/90 text-cyan-400 border border-cyan-800/80">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Contracted Panel Hospital
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                            Non-Panel Healthcare Facility
+                        </span>
+                    {% endif %}
+
+                    {% if hospital.is_contract_active %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active Agreement
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-400 border border-amber-800/60">
+                            Contract Expired
+                        </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                    {{ hospital.name }}
+                </h1>
+                <p class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                    <span>{{ hospital.hospital_type }}</span>
+                    <span>•</span>
+                    <span class="flex items-center gap-1 text-slate-300">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-cyan-400"></i> {{ hospital.city|default:"Location on File" }}
+                    </span>
+                </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2.5">
+                <a href="{% url 'doctor_create' %}?hospital={{ hospital.pk }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition shadow-sm">
+                    <i data-lucide="user-plus" class="w-4 h-4 text-violet-400"></i>
+                    Add Specialist
+                </a>
+                <a href="{% url 'visit_create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/25 transition">
+                    <i data-lucide="clipboard-plus" class="w-4 h-4"></i>
+                    Log Patient Visit
+                </a>
+                <a href="{% url 'hospital_update' hospital.pk %}" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition" title="Edit Hospital">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'hospital_delete' hospital.pk %}" onclick="return confirm('Delete this hospital?');" class="p-2.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 transition" title="Delete">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Affiliated Doctors</span>
+            <div class="text-2xl font-bold text-white font-mono mt-1">{{ doctors.count }}</div>
+            <div class="text-[11px] text-violet-400 mt-1">Consultants & Specialists</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Consultations</span>
+            <div class="text-2xl font-bold text-sky-400 font-mono mt-1">{{ total_visits_count }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Logged Employee Visits</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Total Claims Value</span>
+            <div class="text-2xl font-bold text-cyan-400 font-mono mt-1">Rs. {{ total_claims_amount|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Billed Medical Expenses</div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Approved Disbursements</span>
+            <div class="text-2xl font-bold text-emerald-400 font-mono mt-1">Rs. {{ approved_claims_amount|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Sanctioned Welfare Payouts</div>
+        </div>
+    </div>
+
+    <!-- 2-Column Information & Data Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left Column: Hospital Profile Card -->
+        <div class="space-y-6">
+
+            <!-- Facility Information -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
+                    <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                    Facility Contact & Terms
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Physical Address</span>
+                        <div class="text-slate-200 mt-0.5 leading-relaxed">{{ hospital.address|default:"Address details not specified" }}</div>
+                    </div>
+
+                    <div>
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Contact Person / Liaison</span>
+                        <div class="text-white font-semibold mt-0.5">{{ hospital.contact_person|default:"Hospital Administration" }}</div>
+                    </div>
+
+                    <div>
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Official Phone Number</span>
+                        <div class="text-cyan-400 font-mono font-bold mt-0.5">{{ hospital.contact_number|default:"N/A" }}</div>
+                    </div>
+
+                    <div>
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Official Email</span>
+                        <div class="text-slate-300 font-mono mt-0.5">{{ hospital.email|default:"billing@hospital.org" }}</div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800">
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Corporate Panel Contract</span>
+                        <div class="mt-1 font-mono text-slate-200">
+                            {% if hospital.contract_start_date and hospital.contract_end_date %}
+                                <div>{{ hospital.contract_start_date|date:"d M, Y" }} &rarr; {{ hospital.contract_end_date|date:"d M, Y" }}</div>
+                            {% else %}
+                                <div class="text-slate-400 font-sans">Open-ended / General Arrangement</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if hospital.notes %}
+                    <div class="pt-2 border-t border-slate-800">
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold">Special Terms & Discount Notes</span>
+                        <div class="mt-1 p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 text-slate-300 text-[11px] leading-relaxed">
+                            {{ hospital.notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Affiliated Doctors Quick Box -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="stethoscope" class="w-4 h-4 text-violet-400"></i>
+                        Affiliated Specialists ({{ doctors.count }})
+                    </h3>
+                    <a href="{% url 'doctor_create' %}?hospital={{ hospital.pk }}" class="text-[11px] font-bold text-violet-400 hover:text-violet-300">
+                        + Add
+                    </a>
+                </div>
+
+                <div class="space-y-2.5">
+                    {% for doc in doctors %}
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/60 text-xs">
+                        <div>
+                            <div class="font-bold text-white">{{ doc.name }}</div>
+                            <div class="text-[11px] text-slate-400">{{ doc.specialization|default:"General Medicine" }}</div>
+                        </div>
+                        <div class="text-right font-mono">
+                            <span class="text-cyan-400 font-semibold">Rs. {{ doc.consultation_fee|floatformat:0 }}</span>
+                            <div class="text-[10px] text-slate-500">{{ doc.registration_number|default:"PMC Verified" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="py-4 text-center text-slate-500 text-xs">
+                        No doctors affiliated directly.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column (2 Cols): Visits & Claims Activity -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Recent Hospital Consultations -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-4 h-4 text-sky-400"></i>
+                            Recent Patient Consultations & Visits
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Visits logged at {{ hospital.name }}</p>
+                    </div>
+                    <a href="{% url 'visit_list' %}?hospital={{ hospital.pk }}" class="text-xs font-semibold text-sky-400 hover:underline">
+                        View All &rarr;
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <th class="py-3 px-4">Visit Date</th>
+                                <th class="py-3 px-4">Patient / Employee</th>
+                                <th class="py-3 px-4">Doctor</th>
+                                <th class="py-3 px-4">Diagnosis</th>
+                                <th class="py-3 px-4 text-center">Type</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                            {% for visit in visits %}
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3 px-4 font-mono text-slate-300">{{ visit.visit_date|date:"d M Y" }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-bold text-white">{{ visit.employee.name }}</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">PL# {{ visit.employee.pl_number }}</div>
+                                </td>
+                                <td class="py-3 px-4 text-slate-300">{{ visit.doctor.name|default:"OPD Specialist" }}</td>
+                                <td class="py-3 px-4 truncate max-w-[150px] text-slate-300">{{ visit.diagnosis|default:"General Examination" }}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40">
+                                        {{ visit.visit_type }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <a href="{% url 'visit_detail' visit.pk %}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 inline-block">
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="py-6 text-center text-slate-500">No visits recorded for this hospital.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Medical Claims Processed at this Facility -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="file-heart" class="w-4 h-4 text-cyan-400"></i>
+                            Medical Claims History
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Invoices & reimbursement claims processed</p>
+                    </div>
+                    <a href="{% url 'claim_list' %}?hospital={{ hospital.pk }}" class="text-xs font-semibold text-cyan-400 hover:underline">
+                        View All &rarr;
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <th class="py-3 px-4">Claim #</th>
+                                <th class="py-3 px-4">Employee</th>
+                                <th class="py-3 px-4">Bill Date</th>
+                                <th class="py-3 px-4 text-right">Bill Amount</th>
+                                <th class="py-3 px-4 text-right">Approved</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                            {% for claim in claims %}
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3 px-4 font-mono font-bold text-cyan-400">
+                                    <a href="{% url 'claim_detail' claim.pk %}" class="hover:underline">{{ claim.claim_number }}</a>
+                                </td>
+                                <td class="py-3 px-4 font-medium text-white">{{ claim.employee.name }}</td>
+                                <td class="py-3 px-4 font-mono text-slate-400">{{ claim.claim_date|date:"d M Y" }}</td>
+                                <td class="py-3 px-4 text-right font-mono font-semibold text-white">Rs. {{ claim.total_bill_amount|floatformat:0 }}</td>
+                                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">Rs. {{ claim.approved_amount|floatformat:0 }}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                                        {{ claim.claim_status }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <a href="{% url 'claim_detail' claim.pk %}" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 inline-block">
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="py-6 text-center text-slate-500">No medical claims filed under this facility.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

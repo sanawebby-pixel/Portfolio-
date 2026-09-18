@@ -1,90 +1,237 @@
+import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
-from ..models import Bill, AuditLog
+from django.db.models import Q, Sum, Count
+from django.utils import timezone
+
+from ..models import Bill, Hospital, Employee, AuditLog
 from ..forms.bill_forms import BillForm
 
 
 @login_required
 def bill_list(request):
-    bills = Bill.objects.select_related('hospital', 'employee').all()
-    q = request.GET.get('q', '')
-    status = request.GET.get('status', '')
-    payment = request.GET.get('payment', '')
+    """List, search, filter, and summarize bills and medical expenses."""
+    bills = Bill.objects.select_related('hospital', 'employee', 'approved_by', 'created_by').all()
     
+    # URL Query Parameters
+    q = request.GET.get('q', '').strip()
+    category = request.GET.get('category', '').strip()
+    hospital_id = request.GET.get('hospital', '').strip()
+    status = request.GET.get('status', '').strip()
+    payment = request.GET.get('payment', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+
+    # Search
     if q:
         bills = bills.filter(
-            Q(bill_number__icontains=q) | Q(vendor_name__icontains=q) |
-            Q(employee__name__icontains=q)
+            Q(bill_number__icontains=q) |
+            Q(vendor_name__icontains=q) |
+            Q(description__icontains=q) |
+            Q(employee__name__icontains=q) |
+            Q(employee__pl_number__icontains=q) |
+            Q(hospital__name__icontains=q)
         )
+
+    # Filters
+    if category:
+        bills = bills.filter(category=category)
+    if hospital_id:
+        bills = bills.filter(hospital_id=hospital_id)
     if status:
         bills = bills.filter(status=status)
     if payment:
         bills = bills.filter(payment_status=payment)
+    if date_from:
+        bills = bills.filter(bill_date__gte=date_from)
+    if date_to:
+        bills = bills.filter(bill_date__lte=date_to)
+
+    # KPI Summary Statistics across all records
+    all_bills = Bill.objects.all()
+    total_count = all_bills.count()
+    total_amount = all_bills.aggregate(total=Sum('amount'))['total'] or 0
     
-    paginator = Paginator(bills.order_by('-bill_date'), 25)
+    pending_bills = all_bills.filter(status='Pending')
+    pending_count = pending_bills.count()
+    pending_amount = pending_bills.aggregate(total=Sum('amount'))['total'] or 0
+    
+    approved_unpaid = all_bills.filter(status='Approved', payment_status__in=['Unpaid', 'Partially Paid'])
+    approved_unpaid_count = approved_unpaid.count()
+    approved_unpaid_amount = approved_unpaid.aggregate(total=Sum('amount'))['total'] or 0
+    
+    paid_bills = all_bills.filter(payment_status='Paid')
+    paid_count = paid_bills.count()
+    paid_amount = paid_bills.aggregate(total=Sum('amount'))['total'] or 0
+    
+    hospital_bills_amount = all_bills.filter(category='Hospital Bill').aggregate(total=Sum('amount'))['total'] or 0
+    
+    now = timezone.now()
+    this_month_amount = all_bills.filter(bill_date__year=now.year, bill_date__month=now.month).aggregate(total=Sum('amount'))['total'] or 0
+
+    stats = {
+        'total_count': total_count,
+        'total_amount': total_amount,
+        'pending_count': pending_count,
+        'pending_amount': pending_amount,
+        'approved_unpaid_count': approved_unpaid_count,
+        'approved_unpaid_amount': approved_unpaid_amount,
+        'paid_count': paid_count,
+        'paid_amount': paid_amount,
+        'hospital_bills_amount': hospital_bills_amount,
+        'this_month_amount': this_month_amount,
+    }
+
+    # Filter dropdown data
+    hospitals = Hospital.objects.filter(status='Active').order_by('name')
+    categories = Bill.CATEGORY_CHOICES
+    status_choices = Bill.STATUS_CHOICES
+    payment_choices = Bill.PAYMENT_STATUS_CHOICES
+
+    # Pagination
+    paginator = Paginator(bills.order_by('-bill_date', '-created_at'), 20)
     page_obj = paginator.get_page(request.GET.get('page'))
-    
+
     return render(request, 'welfare_app/bills/list.html', {
-        'page_obj': page_obj, 'q': q, 'status': status, 'payment': payment,
+        'page_obj': page_obj,
+        'stats': stats,
+        'hospitals': hospitals,
+        'categories': categories,
+        'status_choices': status_choices,
+        'payment_choices': payment_choices,
+        'q': q,
+        'category': category,
+        'hospital_id': hospital_id,
+        'status': status,
+        'payment': payment,
+        'date_from': date_from,
+        'date_to': date_to,
         'active_nav': 'bills_expenses',
     })
 
 
 @login_required
 def bill_create(request):
+    """Create a new Bill or Direct Medical Expense."""
     if request.method == 'POST':
         form = BillForm(request.POST, request.FILES)
         if form.is_valid():
             bill = form.save(commit=False)
             bill.created_by = request.user
+            if bill.status == 'Approved' and not bill.approved_by:
+                bill.approved_by = request.user
             bill.save()
-            messages.success(request, f'Bill {bill.bill_number} created.')
+
+            AuditLog.log(
+                user=request.user,
+                action='Created',
+                module='Bill',
+                record_id=str(bill.pk),
+                record_repr=f"Bill #{bill.bill_number} - Rs. {bill.amount:,.0f}",
+                new_values={'bill_number': bill.bill_number, 'amount': str(bill.amount), 'category': bill.category},
+                ip_address=getattr(request, 'client_ip', None)
+            )
+            messages.success(request, f'Bill invoice #{bill.bill_number} recorded successfully.')
             return redirect('bill_list')
+        else:
+            messages.error(request, 'Please correct the highlighted errors in the form.')
     else:
-        form = BillForm()
-    return render(request, 'welfare_app/bills/form.html', {'form': form, 'active_nav': 'bills_expenses'})
+        form = BillForm(initial={'bill_date': timezone.now().date(), 'payment_status': 'Unpaid', 'status': 'Pending'})
+
+    return render(request, 'welfare_app/bills/form.html', {
+        'form': form,
+        'is_edit': False,
+        'active_nav': 'bills_expenses',
+    })
 
 
 @login_required
 def bill_update(request, pk):
+    """Edit an existing Bill or Medical Expense."""
     bill = get_object_or_404(Bill, pk=pk)
     if request.method == 'POST':
         form = BillForm(request.POST, request.FILES, instance=bill)
         if form.is_valid():
-            form.save()
-            messages.success(request, f'Bill {bill.bill_number} updated.')
+            updated_bill = form.save(commit=False)
+            if updated_bill.status == 'Approved' and not updated_bill.approved_by:
+                updated_bill.approved_by = request.user
+            updated_bill.save()
+
+            AuditLog.log(
+                user=request.user,
+                action='Updated',
+                module='Bill',
+                record_id=str(bill.pk),
+                record_repr=f"Bill #{bill.bill_number}",
+                new_values={'status': updated_bill.status, 'payment_status': updated_bill.payment_status, 'amount': str(updated_bill.amount)},
+                ip_address=getattr(request, 'client_ip', None)
+            )
+            messages.success(request, f'Bill #{bill.bill_number} updated successfully.')
             return redirect('bill_list')
+        else:
+            messages.error(request, 'Please review and resolve the errors below.')
     else:
         form = BillForm(instance=bill)
-    return render(request, 'welfare_app/bills/form.html', {'form': form, 'bill': bill, 'active_nav': 'bills_expenses'})
+
+    return render(request, 'welfare_app/bills/form.html', {
+        'form': form,
+        'bill': bill,
+        'is_edit': True,
+        'active_nav': 'bills_expenses',
+    })
 
 
 @login_required
 def bill_delete(request, pk):
+    """Delete a Bill record."""
     bill = get_object_or_404(Bill, pk=pk)
     if request.method == 'POST':
+        bill_num = bill.bill_number
+        AuditLog.log(
+            user=request.user,
+            action='Deleted',
+            module='Bill',
+            record_id=str(bill.pk),
+            record_repr=f"Bill #{bill_num}",
+            ip_address=getattr(request, 'client_ip', None)
+        )
         bill.delete()
-        messages.success(request, 'Bill deleted.')
+        messages.success(request, f'Bill #{bill_num} was permanently removed.')
     return redirect('bill_list')
 
 
 @login_required
 def bill_approve(request, pk):
+    """Perform quick approval, rejection, or mark-as-paid action on a Bill."""
     bill = get_object_or_404(Bill, pk=pk)
     if request.method == 'POST':
-        action = request.POST.get('action', 'approve')
+        action = request.POST.get('action', 'approve').lower()
         if action == 'approve':
             bill.status = 'Approved'
+            bill.approved_by = request.user
+            messages.success(request, f'Bill #{bill.bill_number} has been approved.')
         elif action == 'reject':
             bill.status = 'Rejected'
+            messages.warning(request, f'Bill #{bill.bill_number} marked as Rejected.')
         elif action == 'pay':
             bill.payment_status = 'Paid'
+            bill.paid_date = timezone.now().date()
+            messages.success(request, f'Bill #{bill.bill_number} marked as Paid.')
+        elif action == 'unpay':
+            bill.payment_status = 'Unpaid'
+            bill.paid_date = None
+            messages.info(request, f'Bill #{bill.bill_number} reset to Unpaid.')
+        
         bill.save()
-        AuditLog.log(user=request.user, action=action.title(), module='Bill',
-                    record_id=str(bill.pk), record_repr=f'Bill {bill.bill_number}',
-                    ip_address=getattr(request, 'client_ip', None))
-        messages.success(request, f'Bill {bill.bill_number} {action}d.')
+
+        AuditLog.log(
+            user=request.user,
+            action=action.title(),
+            module='Bill',
+            record_id=str(bill.pk),
+            record_repr=f"Bill #{bill.bill_number} -> {action}",
+            ip_address=getattr(request, 'client_ip', None)
+        )
     return redirect('bill_list')

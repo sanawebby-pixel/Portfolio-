@@ -1,3 +1,139 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Budget Form{% endblock %}
-{% block content %}<div class="p-6">Form</div>{% endblock %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit Budget Allocation{% else %}New Budget Allocation{% endif %} - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <a href="{% url 'budget_list' %}" class="hover:text-cyan-400 transition-colors">Budgets</a>
+                <span>/</span>
+                <span class="text-slate-200">{% if is_edit %}Edit Allocation{% else %}New Allocation{% endif %}</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                </div>
+                {% if is_edit %}Edit Budget Allocation{% else %}Create Annual Budget Allocation{% endif %}
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Define fiscal year budget ceilings for departmental welfare and healthcare provisions.</p>
+        </div>
+        <div>
+            <a href="{% url 'budget_list' %}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Budgets
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <form method="POST" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Section 1: Core Budget Allocation -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="layers" class="w-4 h-4"></i> 1. Allocation Parameters
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Fiscal Year -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fiscal Year <span class="text-cyan-400">*</span></label>
+                        {{ form.year }}
+                        {% if form.year.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.year.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Category / Fund Type -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fund Category <span class="text-cyan-400">*</span></label>
+                        {{ form.category }}
+                        {% if form.category.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Department -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Department (Leave blank for Organization-wide fund)</label>
+                        {{ form.department }}
+                        <p class="text-[10px] text-slate-500 mt-1">If unselected, this ceiling applies globally across all factory departments</p>
+                        {% if form.department.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.department.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Allocated Amount -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Allocated Budget Amount (PKR) <span class="text-cyan-400">*</span></label>
+                        {{ form.allocated_amount }}
+                        {% if form.allocated_amount.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.allocated_amount.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Timeline & Status -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> 2. Period & Status
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Start Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Start Date</label>
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.start_date.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- End Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">End Date</label>
+                        {{ form.end_date }}
+                        {% if form.end_date.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.end_date.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Active Toggle -->
+                    <div class="md:col-span-2 flex items-center gap-3 p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
+                        {{ form.is_active }}
+                        <div>
+                            <label class="text-xs font-bold text-slate-200">Active Budget Allocation</label>
+                            <p class="text-[10px] text-slate-400">Claims in this category/department will count against this ceiling</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Notes & Description -->
+            <div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> 3. Policy Description & Reference
+                </h3>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Description & Board Resolution Notes</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                <a href="{% url 'budget_list' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    {% if is_edit %}Save Changes{% else %}Create Allocation{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

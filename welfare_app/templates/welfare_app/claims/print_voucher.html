@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Voucher - {{ claim.claim_number }}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm 12mm 10mm 12mm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-border {
+                border-color: #000000 !important;
+            }
+            .print-bg {
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .shadow-lg, .shadow-xl, .shadow-md {
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans py-8">
+
+    <!-- Screen Print Action Toolbar (Hidden during actual print) -->
+    <div class="no-print max-w-4xl mx-auto mb-6 px-4 flex items-center justify-between">
+        <a href="{% url 'claim_detail' claim.pk %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700 transition">
+            &larr; Back to Claim File
+        </a>
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/25 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                Print Voucher (Ctrl+P)
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable A4 Voucher Container -->
+    <div class="max-w-4xl mx-auto bg-white border border-slate-300 shadow-xl rounded-none p-8 sm:p-12 text-slate-900 print:p-0 print:border-none">
+
+        <!-- Formal Organization Header -->
+        <div class="border-b-2 border-slate-900 pb-5 mb-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="text-[11px] font-extrabold uppercase tracking-widest text-slate-600">
+                        Al-Shifa Hospital & Welfare Directorate
+                    </div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight uppercase mt-0.5">
+                        Medical Expense Reimbursement Voucher
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-600 mt-1">
+                        Factory Employees Health Welfare & Medical Benefit Fund
+                    </p>
+                </div>
+
+                <!-- Voucher Identifier & Barcode Box -->
+                <div class="text-right">
+                    <div class="inline-block border-2 border-slate-900 px-4 py-1.5 rounded bg-slate-50">
+                        <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Voucher No.</div>
+                        <div class="text-lg font-black font-mono text-slate-900">{{ claim.claim_number }}</div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 font-mono mt-1">
+                        Generated: {{ today|date:"d-M-Y" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Employee & Patient Details -->
+        <div class="mb-6">
+            <div class="bg-slate-100 px-3 py-1.5 font-bold text-xs uppercase tracking-wider text-slate-800 border-l-4 border-slate-900 mb-3 print-bg">
+                1. Claimant & Patient Information
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Employee Name</span>
+                    <span class="font-bold text-slate-900 text-sm">{{ claim.employee.name }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">PL / Employee ID</span>
+                    <span class="font-mono font-bold text-slate-900 text-sm">{{ claim.employee.pl_number }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Department</span>
+                    <span class="font-semibold text-slate-800">{{ claim.employee.department }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Designation / Scale</span>
+                    <span class="font-semibold text-slate-800">{{ claim.employee.designation|default:"Staff" }} ({{ claim.employee.grade_scale|default:"BPS-14" }})</span>
+                </div>
+
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Patient Name</span>
+                    <span class="font-bold text-slate-900">
+                        {% if claim.dependent %}
+                            {{ claim.dependent.name }} ({{ claim.dependent.relationship }})
+                        {% else %}
+                            Self (Employee)
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">CNIC / B-Form</span>
+                    <span class="font-mono text-slate-800">{{ claim.employee.cnic|default:"Registered on File" }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Contact Number</span>
+                    <span class="font-mono text-slate-800">{{ claim.employee.contact_number|default:"N/A" }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Claim Category</span>
+                    <span class="font-semibold text-slate-800">{{ claim.claim_type }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Clinical & Hospital Billing Details -->
+        <div class="mb-6">
+            <div class="bg-slate-100 px-3 py-1.5 font-bold text-xs uppercase tracking-wider text-slate-800 border-l-4 border-slate-900 mb-3 print-bg">
+                2. Hospital Facility & Clinical Details
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                <div class="sm:col-span-2">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Hospital / Clinic</span>
+                    <span class="font-bold text-slate-900">{{ claim.hospital.name|default:"Independent Healthcare Facility" }}</span>
+                    {% if claim.hospital.panel_status %}<span class="text-[10px] text-slate-600">({{ claim.hospital.panel_status }})</span>{% endif %}
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Attending Specialist</span>
+                    <span class="font-semibold text-slate-800">{{ claim.doctor.name|default:"Specialist Doctor" }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Treatment Date</span>
+                    <span class="font-mono font-semibold text-slate-800">{{ claim.treatment_date|date:"d-M-Y" }}</span>
+                </div>
+
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Hospital Bill / Invoice #</span>
+                    <span class="font-mono font-bold text-slate-900">{{ claim.bill_number|default:"INV-ATTACHED" }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Invoice Date</span>
+                    <span class="font-mono text-slate-800">{{ claim.bill_date|date:"d-M-Y"|default:claim.claim_date|date:"d-M-Y" }}</span>
+                </div>
+                <div class="sm:col-span-2">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Medical Diagnosis / Notes</span>
+                    <span class="font-medium text-slate-800">{{ claim.diagnosis|default:"General OPD / Emergency Consultation" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Itemized Fee Schedule & Audit Calculation Table -->
+        <div class="mb-6">
+            <div class="bg-slate-100 px-3 py-1.5 font-bold text-xs uppercase tracking-wider text-slate-800 border-l-4 border-slate-900 mb-2 print-bg">
+                3. Itemized Medical Expenses & Settlement Breakdown
+            </div>
+
+            <table class="w-full text-left border-collapse border border-slate-300 text-xs">
+                <thead>
+                    <tr class="bg-slate-200 border-b border-slate-300 text-[11px] font-bold text-slate-800 uppercase print-bg">
+                        <th class="py-2 px-3 border-r border-slate-300 w-12 text-center">Sr #</th>
+                        <th class="py-2 px-3 border-r border-slate-300">Expense Category / Schedule</th>
+                        <th class="py-2 px-3 border-r border-slate-300">Clinical Justification</th>
+                        <th class="py-2 px-3 text-right">Sanctioned Amount (Rs.)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    {% if claim.doctor_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">01</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Doctor Consultation Fee</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Attending specialist OPD consultation</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.doctor_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.doctor_dues > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">02</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Doctor Dues / Outstanding</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Outstanding medical charges</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.doctor_dues|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.lab_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">03</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Laboratory & Diagnostic Tests</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Pathology, Radiology & Imaging tests</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.lab_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.medicine_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">04</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Prescription Medicine</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Prescribed pharmaceuticals & consumables</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.medicine_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.admission_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">05</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Admission & Hospital Bed Charges</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Room rent / ICU / Ward stay</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.admission_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.procedure_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">06</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Surgical & Medical Procedure Fee</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">OT charges & surgical procedure</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.procedure_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if claim.other_fee > 0 %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">07</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">Other Incidental Medical Charges</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">Emergency charges & hospital supplies</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.other_fee|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot class="border-t-2 border-slate-800 bg-slate-50 font-bold text-xs">
+                    <tr>
+                        <td colspan="3" class="py-2 px-3 text-right uppercase">Gross Incurred Medical Charges:</td>
+                        <td class="py-2 px-3 text-right font-mono text-slate-900">Rs. {{ claim.total_bill_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% if claim.employee_contribution > 0 %}
+                    <tr class="text-slate-600">
+                        <td colspan="3" class="py-1.5 px-3 text-right">Less: Employee Deductible / Co-Payment:</td>
+                        <td class="py-1.5 px-3 text-right font-mono">- Rs. {{ claim.employee_contribution|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="bg-slate-200 font-extrabold text-sm border-t border-slate-400 print-bg">
+                        <td colspan="3" class="py-2 px-3 text-right uppercase text-slate-900">Net Approved Welfare Amount:</td>
+                        <td class="py-2 px-3 text-right font-mono text-slate-900 text-base">Rs. {{ claim.approved_amount|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Section 4: Payment Disbursement Status -->
+        <div class="mb-8">
+            <div class="bg-slate-100 px-3 py-1.5 font-bold text-xs uppercase tracking-wider text-slate-800 border-l-4 border-slate-900 mb-3 print-bg">
+                4. Payment Disbursement & Treasury Record
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Disbursement Status</span>
+                    <span class="font-bold text-slate-900">{{ claim.payment_status }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Total Paid to Date</span>
+                    <span class="font-mono font-bold text-slate-900">Rs. {{ claim.paid_amount|floatformat:2 }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Remaining Balance</span>
+                    <span class="font-mono font-bold text-slate-900">Rs. {{ claim.remaining_payable_amount|floatformat:2 }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Approval State</span>
+                    <span class="font-bold text-slate-900">{{ claim.claim_status }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Official 4-Signature Verification Matrix -->
+        <div class="pt-8 border-t-2 border-slate-800">
+            <div class="grid grid-cols-4 gap-4 text-center text-xs">
+                
+                <!-- Signature 1: Claimant -->
+                <div class="flex flex-col justify-between h-28 border border-slate-300 rounded p-2">
+                    <div class="text-[10px] font-bold text-slate-600 uppercase">1. Employee / Claimant</div>
+                    <div class="border-t border-slate-400 pt-1 text-[11px] font-semibold text-slate-800">
+                        Signature & Date
+                    </div>
+                </div>
+
+                <!-- Signature 2: Welfare Officer -->
+                <div class="flex flex-col justify-between h-28 border border-slate-300 rounded p-2">
+                    <div class="text-[10px] font-bold text-slate-600 uppercase">2. Welfare Inspector</div>
+                    <div class="border-t border-slate-400 pt-1 text-[11px] font-semibold text-slate-800">
+                        Verified & Audited
+                    </div>
+                </div>
+
+                <!-- Signature 3: Factory Manager -->
+                <div class="flex flex-col justify-between h-28 border border-slate-300 rounded p-2">
+                    <div class="text-[10px] font-bold text-slate-600 uppercase">3. Factory General Manager</div>
+                    <div class="border-t border-slate-400 pt-1 text-[11px] font-semibold text-slate-800">
+                        Sanctioned & Approved
+                    </div>
+                </div>
+
+                <!-- Signature 4: Finance Officer -->
+                <div class="flex flex-col justify-between h-28 border border-slate-300 rounded p-2">
+                    <div class="text-[10px] font-bold text-slate-600 uppercase">4. Finance & Treasury</div>
+                    <div class="border-t border-slate-400 pt-1 text-[11px] font-semibold text-slate-800">
+                        Payment Disbursed
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer / Legal Note -->
+        <div class="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-500">
+            This document is a computer-generated official Welfare ERP Medical Voucher. Any alteration or unauthorized issuance is strictly prohibited under factory welfare regulations.
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,3 +1,210 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Budget Report{% endblock %}
-{% block content %}<div class="p-6">Report</div>{% endblock %}
+{% load static %}
+
+{% block title %}Departmental Budget & Variance Report - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'report_index' %}" class="hover:text-cyan-400 transition-colors">Reports Hub</a>
+        <span>/</span>
+        <span class="text-cyan-400">Budget & Variance</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="piggy-bank" class="w-7 h-7 text-cyan-400"></i>
+        Departmental Budget Allocation & Variance Report
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">Fiscal year welfare funds tracking, actual claims expenditure, department burn rates, and remaining balances.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <a href="{% url 'export_report' 'budget' %}?format=csv&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm">
+        <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+        <span>Export CSV</span>
+      </a>
+      <a href="{% url 'export_report' 'budget' %}?format=excel&{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-800/60 bg-emerald-950/40 text-xs font-semibold text-emerald-400 hover:bg-emerald-900/60 transition-all shadow-sm">
+        <i data-lucide="sheet" class="w-4 h-4 text-emerald-400"></i>
+        <span>Export Excel (.xls)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Ribbon -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Allocated Budget</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-lg font-bold text-white font-mono">Rs. {{ total_allocated|floatformat:0 }}</div>
+        <span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">FY {{ year }}</span>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Welfare Fund Pool</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Total Utilized / Claims</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-lg font-bold text-emerald-400 font-mono">Rs. {{ total_used|floatformat:0 }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Approved Claims Spend</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-teal-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-teal-400 uppercase tracking-wider">Remaining Balance</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-lg font-bold text-teal-400 font-mono">Rs. {{ total_remaining|floatformat:0 }}</div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-1">Available Headroom</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-purple-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+      <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Overall Burn Rate</div>
+      <div class="mt-2 flex items-baseline justify-between">
+        <div class="text-lg font-bold text-purple-400 font-mono">{{ overall_util_pct|floatformat:1 }}%</div>
+      </div>
+      <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+        <div class="bg-purple-500 h-full rounded-full" style="width: {{ overall_util_pct|floatformat:0 }}%"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+    <form method="GET" action="{% url 'budget_report' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      
+      <!-- Fiscal Year -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Fiscal Year</label>
+        <select name="year" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>FY {{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Department -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Department</label>
+        <select name="department" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d }}" {% if department == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Fund Category</label>
+        <select name="category" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">All Categories</option>
+          <option value="Medical" {% if category == 'Medical' %}selected{% endif %}>Medical Welfare Fund</option>
+          <option value="Operational" {% if category == 'Operational' %}selected{% endif %}>Operational Welfare</option>
+          <option value="Emergency" {% if category == 'Emergency' %}selected{% endif %}>Emergency Health Fund</option>
+          <option value="Pharmacy" {% if category == 'Pharmacy' %}selected{% endif %}>Pharmacy & Medicine Fund</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          <span>Filter</span>
+        </button>
+        <a href="{% url 'budget_report' %}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors">
+          Reset
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Budgets Table -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3 px-4">Department / Entity</th>
+            <th class="py-3 px-4">Category</th>
+            <th class="py-3 px-4">Year</th>
+            <th class="py-3 px-4 text-right">Allocated (Rs)</th>
+            <th class="py-3 px-4 text-right">Used / Claims (Rs)</th>
+            <th class="py-3 px-4 text-right">Remaining (Rs)</th>
+            <th class="py-3 px-4 w-44">Utilization Gauge</th>
+            <th class="py-3 px-4 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-xs">
+          {% for row in budget_rows %}
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3 px-4">
+              <div class="font-semibold text-white">{{ row.budget.department.name|default:'General Welfare Fund' }}</div>
+              <div class="text-[10px] text-slate-500 font-mono">{{ row.budget.department.code|default:'CORP' }}</div>
+            </td>
+            <td class="py-3 px-4 text-slate-300">
+              {{ row.budget.category }}
+            </td>
+            <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">
+              FY {{ row.budget.year }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-white">
+              {{ row.allocated|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-emerald-400 font-bold">
+              {{ row.used|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-300">
+              {{ row.remaining|floatformat:0 }}
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                <span>{{ row.util_pct|floatformat:1 }}%</span>
+                <span>{% if row.util_pct > 90 %}Critical{% elif row.util_pct > 70 %}High{% else %}Healthy{% endif %}</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full rounded-full {% if row.util_pct > 90 %}bg-rose-500{% elif row.util_pct > 70 %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
+                     style="width: {{ row.util_pct|floatformat:0 }}%"></div>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                {% if row.budget.is_active %}bg-emerald-950/60 border border-emerald-800/40 text-emerald-400
+                {% else %}bg-slate-800 border border-slate-700 text-slate-400{% endif %}">
+                {% if row.budget.is_active %}Active{% else %}Closed{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="py-12 text-center text-slate-500">
+              <i data-lucide="piggy-bank" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+              <p class="text-sm font-semibold">No budget allocations found for the selected year.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}

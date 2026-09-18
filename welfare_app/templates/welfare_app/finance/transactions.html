@@ -1,3 +1,302 @@
 {% extends "welfare_app/base.html" %}
-{% block title %}Transactions{% endblock %}
-{% block content %}<div class="p-6">Transactions</div>{% endblock %}
+{% load static %}
+
+{% block title %}Treasury Transactions Ledger - Welfare ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{
+    deleteModalOpen: false,
+    activeTxId: null,
+    activeTxNumber: '',
+    openDelete(id, num) { this.activeTxId = id; this.activeTxNumber = num; this.deleteModalOpen = true; }
+}">
+
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <a href="{% url 'dashboard' %}" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+                <span>/</span>
+                <a href="{% url 'finance_dashboard' %}" class="hover:text-cyan-400 transition-colors">Finance & Treasury</a>
+                <span>/</span>
+                <span class="text-slate-200">Transactions Ledger</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <div class="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <i data-lucide="arrow-left-right" class="w-6 h-6"></i>
+                </div>
+                Treasury & Cash Transactions Ledger
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Audit trail of all bank credits, claim disbursements, supplier pay-outs, grants, and fund deposits.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'export_report' 'expenses' %}?{{ request.GET.urlencode }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition shadow-sm">
+                <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
+                Export Ledger
+            </a>
+            <a href="{% url 'transaction_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Record Transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Ribbon -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <!-- Inflows -->
+        <div class="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Total Inflows (Grants/Deposits)</div>
+            <div class="mt-2 text-xl font-bold text-emerald-400 font-mono">+Rs. {{ stats.total_inflow|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Cash & Bank Credits</div>
+        </div>
+
+        <!-- Outflows -->
+        <div class="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Total Outflows (Disbursements)</div>
+            <div class="mt-2 text-xl font-bold text-rose-400 font-mono">-Rs. {{ stats.total_outflow|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Claims, Bills, Operations</div>
+        </div>
+
+        <!-- Refunds -->
+        <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Total Refunds / Reversals</div>
+            <div class="mt-2 text-xl font-bold text-amber-300 font-mono">Rs. {{ stats.total_refund|floatformat:0 }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Hospital & Vendor Adjustments</div>
+        </div>
+
+        <!-- Net Liquidity -->
+        <div class="bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">Net Treasury Position</div>
+            <div class="mt-2 text-xl font-bold font-mono {% if stats.net_liquidity >= 0 %}text-cyan-300{% else %}text-rose-400{% endif %}">
+                Rs. {{ stats.net_liquidity|floatformat:0 }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">{{ stats.total_count }} Total Entries</div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <form method="GET" action="{% url 'transaction_list' %}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Search Reference / Account</label>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" name="q" value="{{ q }}" placeholder="Tx ID, Cheque #, Bank account or Category..." 
+                           class="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <!-- Transaction Type -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
+                <select name="type" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Types</option>
+                    {% for t_val, t_label in types %}
+                    <option value="{{ t_val }}" {% if tx_type == t_val %}selected{% endif %}>{{ t_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Method -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Method</label>
+                <select name="method" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <option value="">All Methods</option>
+                    {% for m_val, m_label in methods %}
+                    <option value="{{ m_val }}" {% if method == m_val %}selected{% endif %}>{{ m_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date From</label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter
+                </button>
+                {% if q or tx_type or method or date_from or date_to %}
+                <a href="{% url 'transaction_list' %}" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold transition" title="Clear Filters">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Transactions Table Card -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="px-4 py-3.5">Tx ID</th>
+                        <th class="px-4 py-3.5">Date</th>
+                        <th class="px-4 py-3.5 text-center">Type</th>
+                        <th class="px-4 py-3.5">Category / Head</th>
+                        <th class="px-4 py-3.5">Account & Reference</th>
+                        <th class="px-4 py-3.5">Linked Claim</th>
+                        <th class="px-4 py-3.5 text-center">Slip</th>
+                        <th class="px-4 py-3.5 text-right">Amount (PKR)</th>
+                        <th class="px-4 py-3.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for tx in page_obj %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <!-- Transaction ID -->
+                        <td class="px-4 py-3.5 font-mono font-bold text-white flex items-center gap-2">
+                            <i data-lucide="receipt" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            {{ tx.transaction_id }}
+                        </td>
+
+                        <!-- Date -->
+                        <td class="px-4 py-3.5 font-mono text-slate-300">
+                            {{ tx.date|date:"d M, Y" }}
+                        </td>
+
+                        <!-- Type Badge -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if tx.transaction_type == 'Income' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <i data-lucide="arrow-down-left" class="w-3 h-3"></i> Inflow (Income)
+                            </span>
+                            {% elif tx.transaction_type == 'Refund' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Refund / Credit
+                            </span>
+                            {% elif tx.transaction_type == 'Payment' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i> Claim Payment
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i> Expense
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Category & Description -->
+                        <td class="px-4 py-3.5">
+                            <div class="font-medium text-slate-200">{{ tx.category }}</div>
+                            {% if tx.description %}
+                            <div class="text-[11px] text-slate-400 truncate max-w-xs mt-0.5" title="{{ tx.description }}">{{ tx.description }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Account & Reference -->
+                        <td class="px-4 py-3.5">
+                            <div class="text-slate-200">{{ tx.account }}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">
+                                {{ tx.payment_method }} {% if tx.reference_number %}• Ref: {{ tx.reference_number }}{% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Linked Claim -->
+                        <td class="px-4 py-3.5">
+                            {% if tx.related_claim %}
+                            <a href="{% url 'claim_detail' tx.related_claim.id %}" class="font-mono text-cyan-400 hover:underline flex items-center gap-1">
+                                <i data-lucide="file-heart" class="w-3 h-3"></i>
+                                {{ tx.related_claim.claim_number }}
+                            </a>
+                            <div class="text-[10px] text-slate-400">{{ tx.related_claim.employee.name }}</div>
+                            {% else %}
+                            <span class="text-slate-600">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Attachment Slip -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if tx.attachment %}
+                            <a href="{{ tx.attachment.url }}" target="_blank" class="p-1.5 inline-flex rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 transition" title="View Deposit / Payment Slip">
+                                <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-slate-600">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Amount -->
+                        <td class="px-4 py-3.5 text-right font-mono font-bold text-sm">
+                            <span class="{% if tx.transaction_type == 'Income' or tx.transaction_type == 'Refund' %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                                {% if tx.transaction_type == 'Income' %}+{% elif tx.transaction_type == 'Expense' or tx.transaction_type == 'Payment' %}-{% endif %}Rs. {{ tx.amount|floatformat:2 }}
+                            </span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-4 py-3.5 text-right">
+                            <button @click="openDelete({{ tx.id }}, '{{ tx.transaction_id }}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition" title="Delete">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-500">
+                                    <i data-lucide="arrow-left-right" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-300">No treasury transactions found.</p>
+                                <p class="text-xs text-slate-500 max-w-sm">Record incoming welfare fund grants or outgoing medical disbursements.</p>
+                                <a href="{% url 'transaction_create' %}" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Record First Transaction
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Showing <span class="font-bold text-slate-200">{{ page_obj.start_index }}</span> to <span class="font-bold text-slate-200">{{ page_obj.end_index }}</span> of <span class="font-bold text-slate-200">{{ page_obj.paginator.count }}</span> transactions
+            </div>
+            <div class="flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tx_type %}&type={{ tx_type }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Previous</a>
+                {% endif %}
+
+                <span class="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg font-bold">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tx_type %}&type={{ tx_type }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition font-medium">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4" @click.outside="deleteModalOpen = false">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <i data-lucide="trash-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Delete Transaction Entry</h3>
+                    <p class="text-xs text-slate-400">Permanently remove transaction voucher</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300">Are you sure you want to delete transaction <span class="font-mono text-rose-400 font-bold" x-text="activeTxNumber"></span>? This will alter treasury balance totals.</p>
+            <form :action="'/finance/transactions/' + activeTxId + '/delete/'" method="POST" class="flex justify-end gap-2.5 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20">Delete Transaction</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

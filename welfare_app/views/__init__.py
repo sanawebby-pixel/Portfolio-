@@ -14,3 +14,4 @@ from .search import *
 from .users import *
 from .notifications_views import *
 from .audit import *
+from .settings_views import *
