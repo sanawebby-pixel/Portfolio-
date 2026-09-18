@@ -36,6 +36,7 @@ urlpatterns = [
     path('employees/create/', views.employee_create, name='employee_create'),
     path('employees/<int:pk>/', views.employee_detail, name='employee_detail'),
     path('employees/<int:pk>/edit/', views.employee_update, name='employee_update'),
+    path('employees/<int:pk>/delete/', views.employee_delete, name='employee_delete'),
     # Dependents
     path('employees/<int:employee_pk>/dependents/add/', views.dependent_create, name='dependent_create'),
     path('dependents/<int:pk>/edit/', views.dependent_update, name='dependent_update'),

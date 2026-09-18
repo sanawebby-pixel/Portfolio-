@@ -1,19 +1,464 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Employee Form{% endblock %}
+
+{% block title %}
+    {% if employee %}Edit Employee: {{ employee.name }} ({{ employee.pl_number }}){% else %}Add New Employee{% endif %} - Welfare ERP
+{% endblock %}
+
 {% block breadcrumb %}
-<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2 bg-slate-50 border-b border-slate-100">
-    <a href="{% url 'dashboard' %}" class="hover:text-blue-600">Dashboard</a>
-    <span class="mx-1">/</span>
-    <span class="text-slate-700 font-medium">Employee Form</span>
+<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2.5 bg-slate-50 border-b border-slate-200">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-blue-600 transition">Dashboard</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <a href="{% url 'employee_list' %}" class="hover:text-blue-600 transition">Employee Directory</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span class="text-slate-800 font-semibold">{% if employee %}Edit Employee{% else %}Add Employee{% endif %}</span>
+    </div>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="p-6">
-    <form method="post" enctype="multipart/form-data">
+<div class="max-w-5xl mx-auto space-y-6 pb-12">
+
+    <!-- Header Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/20 flex-shrink-0">
+                <i data-lucide="{% if employee %}user-cog{% else %}user-plus{% endif %}" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 leading-tight">
+                    {% if employee %}
+                        Edit Employee Profile: <span class="text-blue-600">{{ employee.name }}</span>
+                    {% else %}
+                        Add New Employee Profile
+                    {% endif %}
+                </h1>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    {% if employee %}
+                        Update official personnel records, medical status, and contact information.
+                    {% else %}
+                        Fill in complete employee records for HR and Medical Welfare database.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% if employee %}{% url 'employee_detail' employee.pk %}{% else %}{% url 'employee_list' %}{% endif %}" 
+               class="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to {% if employee %}Profile{% else %}Directory{% endif %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Validation Error Alert -->
+    {% if form.errors %}
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+        <i data-lucide="alert-octagon" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"></i>
+        <div class="flex-1">
+            <h4 class="text-xs font-bold text-red-800 uppercase tracking-wide">Please correct the following errors:</h4>
+            <ul class="text-xs text-red-700 list-disc list-inside mt-1 space-y-0.5">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><span class="font-semibold">{{ field|title }}:</span> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Employee Data Entry Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6" id="employeeDataForm">
         {% csrf_token %}
-        <!-- form fields -->
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Save</button>
+
+        <!-- 1. Basic & Personal Information Section -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800">1. Personal & Identity Information</h2>
+                        <p class="text-[11px] text-slate-500">Official identity, national registry and personal demographic details</p>
+                    </div>
+                </div>
+                <span class="text-[11px] text-red-500 font-semibold">* Required Fields</span>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Profile Picture Preview & Upload -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="relative w-20 h-20 rounded-2xl bg-slate-200 border-2 border-white shadow-md overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {% if employee and employee.profile_picture %}
+                            <img id="imagePreview" src="{{ employee.profile_picture.url }}" alt="{{ employee.name }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <img id="imagePreview" src="" alt="Preview" class="w-full h-full object-cover hidden">
+                            <i id="placeholderIcon" data-lucide="user" class="w-10 h-10 text-slate-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <label for="{{ form.profile_picture.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Employee Photograph
+                        </label>
+                        <p class="text-xs text-slate-500 mb-2">Upload a professional portrait photo (JPG, PNG, WebP up to 5MB).</p>
+                        {{ form.profile_picture }}
+                        {% if form.profile_picture.errors %}
+                            <p class="text-xs text-red-600 mt-1 font-medium">{{ form.profile_picture.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- PL Number -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.pl_number.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Employee ID / PL Number <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.pl_number }}
+                        <p class="text-[10px] text-slate-400">Unique plant badge/personnel number (e.g. PL-10452)</p>
+                        {% if form.pl_number.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.pl_number.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.name.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Full Name <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.name }}
+                        <p class="text-[10px] text-slate-400">Employee legal name as on CNIC</p>
+                        {% if form.name.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Father Name -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.father_name.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Father / Guardian Name
+                        </label>
+                        {{ form.father_name }}
+                        {% if form.father_name.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.father_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- CNIC -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.cnic.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            CNIC / National ID
+                        </label>
+                        {{ form.cnic }}
+                        <p class="text-[10px] text-slate-400">Format: 37405-1234567-1</p>
+                        {% if form.cnic.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.cnic.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.date_of_birth.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Date of Birth
+                        </label>
+                        {{ form.date_of_birth }}
+                        {% if form.date_of_birth.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.date_of_birth.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.gender.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Gender
+                        </label>
+                        {{ form.gender }}
+                        {% if form.gender.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.gender.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Employment & Organization Details -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <i data-lucide="briefcase" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">2. Employment & Organizational Placement</h2>
+                    <p class="text-[11px] text-slate-500">Department, role, pay scale, joining date, and operational status</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Department -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.department.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Department <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.department }}
+                    {% if form.department.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.department.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Designation -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.designation.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Designation / Job Title
+                    </label>
+                    {{ form.designation }}
+                    {% if form.designation.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.designation.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Grade / Scale -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.grade_scale.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pay Grade / Scale
+                    </label>
+                    {{ form.grade_scale }}
+                    {% if form.grade_scale.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.grade_scale.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Joined Date -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.joined_date.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Date of Joining
+                    </label>
+                    {{ form.joined_date }}
+                    {% if form.joined_date.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.joined_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Employment Status -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.employment_status.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Employment Status <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.employment_status }}
+                    {% if form.employment_status.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.employment_status.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Basic Salary -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.basic_salary.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Basic Monthly Salary (Rs.)
+                    </label>
+                    {{ form.basic_salary }}
+                    {% if form.basic_salary.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.basic_salary.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Contact & Address Information -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                    <i data-lucide="phone-call" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">3. Contact & Residential Address</h2>
+                    <p class="text-[11px] text-slate-500">Phone numbers, email addresses, and permanent mailing location</p>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <!-- Contact Number -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.contact_number.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Contact / Mobile Number
+                        </label>
+                        {{ form.contact_number }}
+                        {% if form.contact_number.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.contact_number.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="space-y-1.5">
+                        <label for="{{ form.email.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Email Address
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <p class="text-xs text-red-600 font-medium">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.address.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Complete Residential Address
+                    </label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.address.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Bank & Financial Information -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                    <i data-lucide="landmark" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">4. Bank & Reimbursement Account</h2>
+                    <p class="text-[11px] text-slate-500">Official bank details for direct medical claim disbursements and welfare allowances</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <!-- Bank Name -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.bank_name.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Bank Name
+                    </label>
+                    {{ form.bank_name }}
+                    {% if form.bank_name.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.bank_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Account Number -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.bank_account.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Account Number
+                    </label>
+                    {{ form.bank_account }}
+                    {% if form.bank_account.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.bank_account.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- IBAN -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.bank_iban.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        IBAN Number
+                    </label>
+                    {{ form.bank_iban }}
+                    {% if form.bank_iban.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.bank_iban.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Emergency Contact Details -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">5. Emergency Contact Details</h2>
+                    <p class="text-[11px] text-slate-500">Contact person for medical emergencies and critical notices</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <!-- Contact Person Name -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.emergency_contact_name.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Emergency Contact Person
+                    </label>
+                    {{ form.emergency_contact_name }}
+                    {% if form.emergency_contact_name.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.emergency_contact_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Emergency Phone -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.emergency_contact_phone.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Emergency Phone Number
+                    </label>
+                    {{ form.emergency_contact_phone }}
+                    {% if form.emergency_contact_phone.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.emergency_contact_phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Relationship -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.emergency_contact_relation.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Relationship
+                    </label>
+                    {{ form.emergency_contact_relation }}
+                    {% if form.emergency_contact_relation.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.emergency_contact_relation.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Submission Actions -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-xs text-slate-500">
+                <p>Ensure all required details marked with <span class="text-red-500 font-bold">*</span> are accurately filled before saving.</p>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <button type="reset" class="px-4 py-2.5 border border-slate-300 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-semibold transition w-1/3 sm:w-auto">
+                    Reset Form
+                </button>
+                <a href="{% if employee %}{% url 'employee_detail' employee.pk %}{% else %}{% url 'employee_list' %}{% endif %}" 
+                   class="px-4 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold text-center transition w-1/3 sm:w-auto">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 transition w-1/3 sm:w-auto">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    {% if employee %}Save Changes{% else %}Save Employee{% endif %}
+                </button>
+            </div>
+        </div>
     </form>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Live Image Preview for Profile Picture input
+    const photoInput = document.querySelector('input[type="file"]');
+    const imagePreview = document.getElementById('imagePreview');
+    const placeholderIcon = document.getElementById('placeholderIcon');
+
+    if (photoInput && imagePreview) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    imagePreview.src = evt.target.result;
+                    imagePreview.classList.remove('hidden');
+                    if (placeholderIcon) {
+                        placeholderIcon.classList.add('hidden');
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+</script>
 {% endblock %}

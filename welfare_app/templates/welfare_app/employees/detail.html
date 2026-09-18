@@ -1,18 +1,587 @@
 {% extends "welfare_app/base.html" %}
 {% load welfare_tags %}
-{% block title %}Employee Detail{% endblock %}
+
+{% block title %}{{ employee.name }} ({{ employee.pl_number }}) - Employee Profile - Welfare ERP{% endblock %}
+
 {% block breadcrumb %}
-<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2 bg-slate-50 border-b border-slate-100">
-    <a href="{% url 'dashboard' %}" class="hover:text-blue-600">Dashboard</a>
-    <span class="mx-1">/</span>
-    <a href="#" class="hover:text-blue-600">Employees</a>
-    <span class="mx-1">/</span>
-    <span class="text-slate-700 font-medium">Detail</span>
+<nav class="text-xs text-slate-500 px-4 sm:px-8 py-2.5 bg-slate-50 border-b border-slate-200">
+    <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard' %}" class="hover:text-blue-600 transition">Dashboard</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <a href="{% url 'employee_list' %}" class="hover:text-blue-600 transition">Employee Directory</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span class="text-slate-800 font-semibold">{{ employee.name }}</span>
+    </div>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="p-6">
-    <h1 class="text-xl font-bold text-slate-800 mb-4">Employee Profile</h1>
-    <!-- Content goes here -->
+<div class="max-w-7xl mx-auto space-y-6 pb-12" x-data="{ activeTab: 'personal' }">
+
+    <!-- Profile Header Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <!-- Avatar & Main Identifiers -->
+            <div class="flex items-center gap-5">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-extrabold text-2xl shadow-xl shadow-blue-600/20 border-2 border-white flex-shrink-0">
+                    {% if employee.profile_picture %}
+                        <img src="{{ employee.profile_picture.url }}" alt="{{ employee.name }}" class="w-full h-full object-cover">
+                    {% else %}
+                        {{ employee.name|make_list|first|upper }}
+                    {% endif %}
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">{{ employee.name }}</h1>
+                        <span class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            {{ employee.pl_number }}
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold
+                            {% if employee.employment_status == 'Active' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif employee.employment_status == 'Retired' %}bg-blue-50 text-blue-700 border border-blue-200
+                            {% elif employee.employment_status == 'Suspended' %}bg-amber-50 text-amber-700 border border-amber-200
+                            {% elif employee.employment_status == 'Terminated' %}bg-red-50 text-red-700 border border-red-200
+                            {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full {% if employee.employment_status == 'Active' %}bg-emerald-500{% elif employee.employment_status == 'Retired' %}bg-blue-500{% else %}bg-slate-400{% endif %}"></span>
+                            {{ employee.employment_status }}
+                        </span>
+                    </div>
+
+                    <p class="text-xs sm:text-sm font-medium text-slate-600">
+                        {{ employee.designation|default:"Staff Member" }} &bull; <span class="text-blue-600 font-semibold">{{ employee.department }}</span>
+                        {% if employee.grade_scale %} &bull; <span class="text-slate-500">{{ employee.grade_scale }}</span>{% endif %}
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+                        {% if employee.contact_number %}
+                            <span class="flex items-center gap-1.5 text-slate-600">
+                                <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i> {{ employee.contact_number }}
+                            </span>
+                        {% endif %}
+                        {% if employee.email %}
+                            <span class="flex items-center gap-1.5 text-slate-600">
+                                <i data-lucide="mail" class="w-3.5 h-3.5 text-slate-400"></i> {{ employee.email }}
+                            </span>
+                        {% endif %}
+                        {% if employee.joined_date %}
+                            <span class="flex items-center gap-1.5 text-slate-500">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i> Joined {{ employee.joined_date|date:"M d, Y" }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Action Buttons -->
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                <a href="{% url 'employee_update' employee.pk %}" 
+                   class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 transition flex-1 sm:flex-none">
+                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    Edit Profile
+                </a>
+                <a href="{% url 'dependent_create' employee.pk %}" 
+                   class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition flex-1 sm:flex-none">
+                    <i data-lucide="user-plus" class="w-3.5 h-3.5 text-slate-500"></i>
+                    Add Family Member
+                </a>
+                <a href="{% url 'visit_create' %}?employee={{ employee.pk }}" 
+                   class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-semibold transition flex-1 sm:flex-none">
+                    <i data-lucide="stethoscope" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    Record Visit
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Summary Stat Badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-100">
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Medical Exp.</div>
+                <div class="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">Rs. {{ total_expense|floatformat:0 }}</div>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Hospital Visits</div>
+                <div class="text-base sm:text-lg font-extrabold text-blue-600 mt-0.5">{{ total_visits }} Visits</div>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Registered Dependents</div>
+                <div class="text-base sm:text-lg font-extrabold text-indigo-600 mt-0.5">{{ dependents.count }} Members</div>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Claims</div>
+                <div class="text-base sm:text-lg font-extrabold text-amber-600 mt-0.5">{{ active_claims }} Pending</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Navigation Bar -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5 overflow-x-auto custom-scrollbar">
+        <div class="flex items-center gap-1 min-w-max">
+            <button @click="activeTab = 'personal'" 
+                    :class="activeTab === 'personal' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="user" class="w-4 h-4"></i>
+                Personal Info
+            </button>
+
+            <button @click="activeTab = 'employment'" 
+                    :class="activeTab === 'employment' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-4 h-4"></i>
+                Employment & Bank
+            </button>
+
+            <button @click="activeTab = 'contact'" 
+                    :class="activeTab === 'contact' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="phone-call" class="w-4 h-4"></i>
+                Contact & Emergency
+            </button>
+
+            <button @click="activeTab = 'dependents'" 
+                    :class="activeTab === 'dependents' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="users-round" class="w-4 h-4"></i>
+                Family / Dependents ({{ dependents.count }})
+            </button>
+
+            <button @click="activeTab = 'visits'" 
+                    :class="activeTab === 'visits' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                Hospital Visits ({{ visits|length }})
+            </button>
+
+            <button @click="activeTab = 'claims'" 
+                    :class="activeTab === 'claims' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="file-heart" class="w-4 h-4"></i>
+                Medical Claims ({{ claims|length }})
+            </button>
+
+            <button @click="activeTab = 'expenses'" 
+                    :class="activeTab === 'expenses' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="receipt" class="w-4 h-4"></i>
+                Expenses Breakdown
+            </button>
+        </div>
+    </div>
+
+    <!-- TAB 1: Personal Information -->
+    <div x-show="activeTab === 'personal'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2">
+                <i data-lucide="id-card" class="w-4 h-4 text-blue-600"></i> Personal & Demographic Details
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Full Legal Name</span>
+                    <p class="font-semibold text-slate-800 text-sm">{{ employee.name }}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Father / Guardian Name</span>
+                    <p class="font-semibold text-slate-800 text-sm">{{ employee.father_name|default:"Not Provided" }}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">CNIC / National ID</span>
+                    <p class="font-semibold text-slate-800 font-mono text-sm">{{ employee.cnic|default:"Not Provided" }}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Date of Birth</span>
+                    <p class="font-semibold text-slate-800 text-sm">{{ employee.date_of_birth|date:"F d, Y"|default:"Not Provided" }}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Gender</span>
+                    <p class="font-semibold text-slate-800 text-sm">{{ employee.gender|default:"Not Specified" }}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">System Registration Date</span>
+                    <p class="font-semibold text-slate-800 text-sm">{{ employee.created_at|date:"F d, Y" }}</p>
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-3 space-y-1 pt-4 border-t border-slate-100">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Permanent / Residential Address</span>
+                    <p class="font-medium text-slate-700 text-sm leading-relaxed">{{ employee.address|default:"No permanent address recorded in file." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Employment & Bank -->
+    <div x-show="activeTab === 'employment'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-8">
+            <div>
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2">
+                    <i data-lucide="briefcase" class="w-4 h-4 text-emerald-600"></i> Employment & Organizational Placement
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Department</span>
+                        <p class="font-bold text-blue-600 text-sm">{{ employee.department }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Designation / Title</span>
+                        <p class="font-semibold text-slate-800 text-sm">{{ employee.designation|default:"Staff" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Pay Grade / Scale</span>
+                        <p class="font-semibold text-slate-800 text-sm">{{ employee.grade_scale|default:"Standard Scale" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Date of Joining</span>
+                        <p class="font-semibold text-slate-800 text-sm">{{ employee.joined_date|date:"F d, Y"|default:"Not Recorded" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Employment Status</span>
+                        <p class="font-bold text-slate-800 text-sm">{{ employee.employment_status }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Basic Monthly Salary</span>
+                        <p class="font-extrabold text-emerald-600 text-sm">Rs. {{ employee.basic_salary|default:"0"|floatformat:0 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Info -->
+            <div class="pt-6 border-t border-slate-100">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2">
+                    <i data-lucide="landmark" class="w-4 h-4 text-amber-600"></i> Bank & Direct Reimbursement Information
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Bank Name</span>
+                        <p class="font-semibold text-slate-800 text-sm">{{ employee.bank_name|default:"Not Provided" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Account Number</span>
+                        <p class="font-semibold text-slate-800 font-mono text-sm">{{ employee.bank_account|default:"Not Provided" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">IBAN Number</span>
+                        <p class="font-semibold text-slate-800 font-mono text-sm">{{ employee.bank_iban|default:"Not Provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Contact & Emergency -->
+    <div x-show="activeTab === 'contact'" x-transition class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Contact Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4 text-purple-600"></i> Direct Contact Details
+                </h3>
+
+                <div class="space-y-4 text-xs">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-400 uppercase text-[10px]">Primary Mobile Number</span>
+                            <p class="font-semibold text-slate-800 text-sm">{{ employee.contact_number|default:"Not Provided" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-400 uppercase text-[10px]">Email Address</span>
+                            <p class="font-semibold text-slate-800 text-sm">{{ employee.email|default:"Not Provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i> Emergency Contact Information
+                </h3>
+
+                <div class="space-y-4 text-xs">
+                    <div class="p-4 bg-rose-50/50 rounded-xl border border-rose-100 space-y-3">
+                        <div>
+                            <span class="font-bold text-rose-400 uppercase text-[10px]">Contact Person</span>
+                            <p class="font-bold text-slate-800 text-sm">{{ employee.emergency_contact_name|default:"Not Provided" }}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-rose-100">
+                            <div>
+                                <span class="font-bold text-rose-400 uppercase text-[10px]">Emergency Phone</span>
+                                <p class="font-semibold text-slate-800">{{ employee.emergency_contact_phone|default:"-" }}</p>
+                            </div>
+                            <div>
+                                <span class="font-bold text-rose-400 uppercase text-[10px]">Relationship</span>
+                                <p class="font-semibold text-slate-800">{{ employee.emergency_contact_relation|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: Family & Dependents -->
+    <div x-show="activeTab === 'dependents'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Registered Family Members & Dependents</h3>
+                    <p class="text-xs text-slate-500">Dependents entitled to welfare health benefits and hospital treatment reimbursement</p>
+                </div>
+                <a href="{% url 'dependent_create' employee.pk %}" 
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Family Member
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                            <th class="p-4 pl-6">Dependent Name</th>
+                            <th class="p-4">Relationship</th>
+                            <th class="p-4">Gender</th>
+                            <th class="p-4">Date of Birth</th>
+                            <th class="p-4">CNIC / B-Form</th>
+                            <th class="p-4">Medical Status</th>
+                            <th class="p-4 pr-6 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for dep in dependents %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-4 pl-6 font-bold text-slate-900">{{ dep.name }}</td>
+                            <td class="p-4 font-semibold text-blue-600">{{ dep.relationship }}</td>
+                            <td class="p-4 text-slate-600">{{ dep.gender|default:"-" }}</td>
+                            <td class="p-4 text-slate-600">{{ dep.date_of_birth|date:"M d, Y"|default:"-" }}</td>
+                            <td class="p-4 font-mono text-slate-700">{{ dep.cnic_bform|default:"-" }}</td>
+                            <td class="p-4">
+                                {% if dep.medical_eligible %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <i data-lucide="check" class="w-3 h-3"></i> Covered
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                        Not Covered
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="p-4 pr-6 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{% url 'dependent_update' dep.pk %}" class="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-lg transition" title="Edit">
+                                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                    <a href="{% url 'dependent_delete' dep.pk %}" onclick="return confirm('Remove dependent {{ dep.name }}?');" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition" title="Delete">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400">
+                                No dependents or family members registered yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: Hospital Visits -->
+    <div x-show="activeTab === 'visits'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Hospital Visits & Treatment Log</h3>
+                    <p class="text-xs text-slate-500">Chronological history of doctor consultations and medical admissions</p>
+                </div>
+                <a href="{% url 'visit_create' %}?employee={{ employee.pk }}" 
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Record New Visit
+                </a>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                {% for v in visits %}
+                <div class="p-6 hover:bg-slate-50/80 transition space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-blue-50 text-blue-700 border border-blue-100">
+                                {{ v.visit_date|date:"M d, Y" }}
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                {{ v.visit_type }}
+                            </span>
+                            <h4 class="text-sm font-bold text-slate-900">
+                                {% if v.hospital %}{{ v.hospital.name }}{% else %}{{ v.hospital_name }}{% endif %}
+                            </h4>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium">
+                            Attending Doctor: <span class="font-semibold text-slate-800">{% if v.doctor %}{{ v.doctor.name }}{% else %}{{ v.doctor_name|default:"Attending Physician" }}{% endif %}</span>
+                        </div>
+                    </div>
+
+                    {% if v.diagnosis %}
+                    <div class="text-xs">
+                        <span class="font-bold text-slate-500">Diagnosis:</span>
+                        <span class="font-semibold text-slate-800">{{ v.diagnosis }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if v.prescription %}
+                    <div class="p-3 bg-slate-50 rounded-xl text-xs font-mono text-slate-700 whitespace-pre-line border border-slate-100">
+                        {{ v.prescription }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-slate-400 text-xs">
+                    No hospital visits recorded for this employee.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: Medical Claims -->
+    <div x-show="activeTab === 'claims'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Medical Expense Claims</h3>
+                    <p class="text-xs text-slate-500">Reimbursement claims submitted and approved for this employee</p>
+                </div>
+                <a href="{% url 'claim_create' %}?employee={{ employee.pk }}" 
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> New Claim
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                            <th class="p-4 pl-6">Claim #</th>
+                            <th class="p-4">Date</th>
+                            <th class="p-4">Hospital</th>
+                            <th class="p-4">Billed Amount</th>
+                            <th class="p-4">Approved Amount</th>
+                            <th class="p-4">Claim Status</th>
+                            <th class="p-4">Payment</th>
+                            <th class="p-4 pr-6 text-right">View</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for c in claims %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-4 pl-6 font-mono font-bold text-blue-600">{{ c.claim_number }}</td>
+                            <td class="p-4 text-slate-600">{{ c.claim_date|date:"M d, Y" }}</td>
+                            <td class="p-4 font-medium text-slate-800">{{ c.hospital.name|default:"-" }}</td>
+                            <td class="p-4 font-bold text-slate-900">Rs. {{ c.total_bill_amount|floatformat:0 }}</td>
+                            <td class="p-4 font-bold text-emerald-600">Rs. {{ c.approved_amount|floatformat:0 }}</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold
+                                    {% if c.claim_status == 'Approved' or c.claim_status == 'Paid' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                    {% elif c.claim_status == 'Submitted' or c.claim_status == 'Under Review' %}bg-amber-50 text-amber-700 border border-amber-200
+                                    {% elif c.claim_status == 'Rejected' %}bg-red-50 text-red-700 border border-red-200
+                                    {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                    {{ c.claim_status }}
+                                </span>
+                            </td>
+                            <td class="p-4">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold {% if c.payment_status == 'Paid' %}bg-emerald-100 text-emerald-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+                                    {{ c.payment_status }}
+                                </span>
+                            </td>
+                            <td class="p-4 pr-6 text-right">
+                                <a href="{% url 'claim_detail' c.pk %}" class="text-blue-600 hover:underline font-semibold">Details</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-slate-400">
+                                No claims recorded for this employee.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 7: Expenses Breakdown -->
+    <div x-show="activeTab === 'expenses'" x-transition class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900">Historical Medical Records & Fee Breakdown</h3>
+                <p class="text-xs text-slate-500">Itemized bills and expenses summary from hospital vouchers</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                            <th class="p-4 pl-6">Bill #</th>
+                            <th class="p-4">Date</th>
+                            <th class="p-4">Hospital</th>
+                            <th class="p-4">Doctor Fee</th>
+                            <th class="p-4">Lab/Tests</th>
+                            <th class="p-4">Medicine</th>
+                            <th class="p-4">Admission</th>
+                            <th class="p-4">Other</th>
+                            <th class="p-4 pr-6 text-right">Total (Rs.)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for r in medical_records %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-4 pl-6 font-mono text-slate-700 font-semibold">{{ r.bill_no|default:"N/A" }}</td>
+                            <td class="p-4 text-slate-600">{{ r.treatment_date|date:"M d, Y" }}</td>
+                            <td class="p-4 font-medium text-slate-800">{{ r.hospital }}</td>
+                            <td class="p-4">Rs. {{ r.doctor_fee|floatformat:0 }}</td>
+                            <td class="p-4">Rs. {{ r.lab_fee|floatformat:0 }}</td>
+                            <td class="p-4">Rs. {{ r.medicine_fee|floatformat:0 }}</td>
+                            <td class="p-4">Rs. {{ r.admission_fee|floatformat:0 }}</td>
+                            <td class="p-4">Rs. {{ r.other_fee|floatformat:0 }}</td>
+                            <td class="p-4 pr-6 text-right font-extrabold text-slate-900">Rs. {{ r.total_expense|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="p-8 text-center text-slate-400">
+                                No historical expense records recorded.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
