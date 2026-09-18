@@ -46,6 +46,9 @@
                             <span class="w-1.5 h-1.5 rounded-full {% if employee.employment_status == 'Active' %}bg-emerald-500{% elif employee.employment_status == 'Retired' %}bg-blue-500{% else %}bg-slate-400{% endif %}"></span>
                             {{ employee.employment_status }}
                         </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {{ employee.employment_type|default:"Permanent" }}
+                        </span>
                     </div>
 
                     <p class="text-xs sm:text-sm font-medium text-slate-600">
@@ -241,6 +244,11 @@
                     <div class="space-y-1">
                         <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Date of Joining</span>
                         <p class="font-semibold text-slate-800 text-sm">{{ employee.joined_date|date:"F d, Y"|default:"Not Recorded" }}</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Employment Type</span>
+                        <p class="font-bold text-slate-800 text-sm">{{ employee.employment_type|default:"Permanent" }}</p>
                     </div>
 
                     <div class="space-y-1">

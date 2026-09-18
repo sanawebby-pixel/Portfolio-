@@ -83,6 +83,12 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
         required=True,
         widget=forms.Select(attrs={'class': 'bg-white'})
     )
+    employment_type = forms.ChoiceField(
+        choices=Employee.EMPLOYMENT_TYPE_CHOICES,
+        initial='Permanent',
+        required=True,
+        widget=forms.Select(attrs={'class': 'bg-white'})
+    )
 
     class Meta:
         model = Employee
@@ -101,6 +107,7 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
             'designation': 'Current Job Designation / Title',
             'grade_scale': 'Pay Grade / Scale (e.g. BPS-16)',
             'joined_date': 'Date of Joining Service',
+            'employment_type': 'Employment Type',
             'employment_status': 'Employment Status',
             'basic_salary': 'Basic Monthly Salary (Rs.)',
             'bank_name': 'Bank Name',
@@ -124,6 +131,7 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
             'designation': forms.TextInput(attrs={'placeholder': 'e.g. Senior Electrical Technician'}),
             'grade_scale': forms.TextInput(attrs={'placeholder': 'e.g. Scale-14 / Grade B'}),
             'joined_date': forms.DateInput(attrs={'type': 'date'}),
+            'employment_type': forms.Select(attrs={'class': 'bg-white'}),
             'employment_status': forms.Select(attrs={'class': 'bg-white'}),
             'basic_salary': forms.NumberInput(attrs={'placeholder': 'e.g. 75000', 'min': '0', 'step': '500'}),
             'bank_name': forms.TextInput(attrs={'placeholder': 'e.g. Habib Bank Limited (HBL)'}),

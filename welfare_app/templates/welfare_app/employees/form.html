@@ -60,10 +60,13 @@
         <div class="flex-1">
             <h4 class="text-xs font-bold text-red-800 uppercase tracking-wide">Please correct the following errors:</h4>
             <ul class="text-xs text-red-700 list-disc list-inside mt-1 space-y-0.5">
-                {% for field, errors in form.errors.items %}
-                    {% for error in errors %}
-                        <li><span class="font-semibold">{{ field|title }}:</span> {{ error }}</li>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><span class="font-semibold">{{ field.label }}:</span> {{ error }}</li>
                     {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
                 {% endfor %}
             </ul>
         </div>
@@ -239,6 +242,18 @@
                     {{ form.joined_date }}
                     {% if form.joined_date.errors %}
                         <p class="text-xs text-red-600 font-medium">{{ form.joined_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Employment Type -->
+                <div class="space-y-1.5">
+                    <label for="{{ form.employment_type.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Employment Type <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.employment_type }}
+                    <p class="text-[10px] text-slate-400">Staff classification (Permanent, Contract, Daily Wage, etc.)</p>
+                    {% if form.employment_type.errors %}
+                        <p class="text-xs text-red-600 font-medium">{{ form.employment_type.errors.0 }}</p>
                     {% endif %}
                 </div>
 

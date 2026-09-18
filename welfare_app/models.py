@@ -55,8 +55,11 @@ class Employee(models.Model):
         ('Permanent', 'Permanent'),
         ('Contract', 'Contract'),
         ('Probation', 'Probation'),
+        ('Temporary', 'Temporary'),
         ('Daily Wage', 'Daily Wage'),
+        ('Intern', 'Intern'),
         ('Trainee / Apprentice', 'Trainee / Apprentice'),
+        ('Other', 'Other'),
     ]
 
     # Existing Core Fields
