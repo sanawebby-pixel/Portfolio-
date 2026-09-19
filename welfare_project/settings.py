@@ -161,10 +161,15 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 
-# CSRF trusted origins for Vercel
+# CSRF trusted origins for Vercel & Public Sharing Tunnels
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
     'https://*.now.sh',
+    'https://*.pinggy.link',
+    'https://*.lhr.life',
+    'https://*.loca.lt',
+    'https://*.ngrok-free.app',
+    'https://*.ngrok.io',
 ]
 
 
