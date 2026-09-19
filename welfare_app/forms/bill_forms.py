@@ -37,3 +37,15 @@ class BillForm(TailwindMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['hospital'].queryset = Hospital.objects.all().order_by('name')
         self.fields['employee'].queryset = Employee.objects.all().order_by('name')
+        optional_fields = ['attachment', 'hospital', 'employee', 'vendor_name', 'due_date', 'paid_date', 'description', 'payment_method']
+        for f in optional_fields:
+            if f in self.fields:
+                self.fields[f].required = False
+        if 'payment_method' in self.fields and not self.initial.get('payment_method'):
+            self.fields['payment_method'].initial = 'Bank Transfer'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('payment_method'):
+            cleaned_data['payment_method'] = 'Bank Transfer'
+        return cleaned_data

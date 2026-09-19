@@ -510,6 +510,14 @@
                             Account: {{ pay.account }}
                         </div>
                         {% endif %}
+                        {% if pay.receipt_attachment %}
+                        <div class="mt-1.5 pt-1 border-t border-slate-700/50 flex items-center justify-between">
+                            <span class="text-[10px] text-slate-400">Slip / Receipt:</span>
+                            <a href="{{ pay.receipt_attachment.url }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 font-medium">
+                                <i data-lucide="paperclip" class="w-3 h-3"></i> View Slip
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                     {% empty %}
                     <div class="py-6 text-center text-slate-500 text-xs">

@@ -249,6 +249,11 @@
                         <!-- Actions -->
                         <td class="py-3.5 px-4 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1.5">
+                                {% if v.attached_document %}
+                                <a href="{{ v.attached_document.url }}" target="_blank" title="View / Download Attached Document" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 transition">
+                                    <i data-lucide="paperclip" class="w-4 h-4"></i>
+                                </a>
+                                {% endif %}
                                 <a href="{% url 'visit_detail' v.pk %}" title="View Visit File" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
                                     <i data-lucide="eye" class="w-4 h-4"></i>
                                 </a>

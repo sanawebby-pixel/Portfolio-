@@ -247,6 +247,13 @@
                             Attach Prescription / Discharge Slip / Bill Scan
                         </label>
                         {{ form.attached_document }}
+                        {% if form.instance.attached_document %}
+                        <div class="mt-2 text-xs text-slate-400 flex items-center gap-2">
+                            <i data-lucide="paperclip" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Current file:</span>
+                            <a href="{{ form.instance.attached_document.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono">{{ form.instance.attached_document.name }}</a>
+                        </div>
+                        {% endif %}
                         {% if form.attached_document.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.attached_document.errors }}</div>{% endif %}
                     </div>
 

@@ -7,7 +7,7 @@ from .employee_forms import TailwindMixin
 class MedicalClaimForm(TailwindMixin, forms.ModelForm):
     class Meta:
         model = MedicalClaim
-        exclude = ['claim_number', 'paid_amount', 'created_by', 'updated_by', 'created_at', 'updated_at']
+        exclude = ['claim_number', 'paid_amount', 'rejected_amount', 'rejection_reason', 'created_by', 'updated_by', 'created_at', 'updated_at']
         labels = {
             'employee': 'Employee (Search / Select)',
             'dependent': 'Family Member / Patient (Optional - Leave blank if for Employee)',
@@ -61,10 +61,35 @@ class MedicalClaimForm(TailwindMixin, forms.ModelForm):
         self.fields['employee'].queryset = Employee.objects.all().order_by('name')
         self.fields['hospital'].queryset = Hospital.objects.filter(status='Active').order_by('name')
         self.fields['doctor'].queryset = Doctor.objects.filter(status='Active').order_by('name')
+
+        fee_fields = [
+            'doctor_fee', 'doctor_dues', 'lab_fee', 'medicine_fee',
+            'admission_fee', 'procedure_fee', 'other_fee',
+            'total_bill_amount', 'claimable_amount', 'eligible_amount',
+            'employee_contribution', 'welfare_contribution', 'approved_amount',
+            'supporting_documents', 'bill_number', 'bill_date', 'diagnosis', 'remarks'
+        ]
+        for field_name in fee_fields:
+            if field_name in self.fields:
+                self.fields[field_name].required = False
+
         # Default safety: New claims start as Pending and Unpaid
         if not self.instance or not self.instance.pk:
             self.fields['claim_status'].initial = 'Pending'
             self.fields['payment_status'].initial = 'Unpaid'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        numeric_fields = [
+            'doctor_fee', 'doctor_dues', 'lab_fee', 'medicine_fee',
+            'admission_fee', 'procedure_fee', 'other_fee',
+            'total_bill_amount', 'claimable_amount', 'eligible_amount',
+            'employee_contribution', 'welfare_contribution', 'approved_amount'
+        ]
+        for field_name in numeric_fields:
+            if field_name in cleaned_data and cleaned_data[field_name] in [None, '']:
+                cleaned_data[field_name] = 0.00
+        return cleaned_data
 
 
 class ClaimPaymentForm(TailwindMixin, forms.ModelForm):

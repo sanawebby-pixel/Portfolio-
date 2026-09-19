@@ -102,6 +102,7 @@ urlpatterns = [
     path('finance/budgets/<int:pk>/delete/', views.budget_delete, name='budget_delete'),
     path('finance/transactions/', views.transaction_list, name='transaction_list'),
     path('finance/transactions/create/', views.transaction_create, name='transaction_create'),
+    path('finance/transactions/<int:pk>/edit/', views.transaction_update, name='transaction_update'),
     path('finance/transactions/<int:pk>/delete/', views.transaction_delete, name='transaction_delete'),
 
     # ============================================================

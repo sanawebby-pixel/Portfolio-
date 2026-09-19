@@ -221,9 +221,10 @@
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Attach Bill / Prescription / Report</label>
           {{ form.supporting_documents }}
-          {% if claim.supporting_documents %}
-            <div class="text-[11px] text-cyan-400 mt-1">
-              Current file: <a href="{{ claim.supporting_documents.url }}" target="_blank" class="underline hover:text-cyan-300">View Document</a>
+          {% if form.instance.supporting_documents %}
+            <div class="text-[11px] text-cyan-400 mt-1 flex items-center gap-1.5">
+              <span class="text-slate-400">Current file:</span>
+              <a href="{{ form.instance.supporting_documents.url }}" target="_blank" class="underline hover:text-cyan-300 font-mono">{{ form.instance.supporting_documents.name }}</a>
             </div>
           {% endif %}
         </div>

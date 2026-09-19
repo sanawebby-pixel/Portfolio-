@@ -351,6 +351,37 @@ def transaction_create(request):
 
 
 @login_required
+def transaction_update(request, pk):
+    """Edit a Treasury Transaction."""
+    tx = get_object_or_404(FinanceTransaction, pk=pk)
+    if request.method == 'POST':
+        form = FinanceTransactionForm(request.POST, request.FILES, instance=tx)
+        if form.is_valid():
+            form.save()
+            AuditLog.log(
+                user=request.user,
+                action='Updated',
+                module='FinanceTransaction',
+                record_id=str(tx.pk),
+                record_repr=f"Tx #{tx.transaction_id}",
+                ip_address=getattr(request, 'client_ip', None)
+            )
+            messages.success(request, f'Transaction #{tx.transaction_id} updated.')
+            return redirect('transaction_list')
+        else:
+            messages.error(request, 'Please review the errors below.')
+    else:
+        form = FinanceTransactionForm(instance=tx)
+
+    return render(request, 'welfare_app/finance/transaction_form.html', {
+        'form': form,
+        'tx': tx,
+        'is_edit': True,
+        'active_nav': 'finance',
+    })
+
+
+@login_required
 def transaction_delete(request, pk):
     """Delete a transaction record."""
     tx = get_object_or_404(FinanceTransaction, pk=pk)

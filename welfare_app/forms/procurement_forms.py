@@ -15,11 +15,17 @@ class SupplierForm(TailwindMixin, forms.ModelForm):
 class PurchaseRequestForm(TailwindMixin, forms.ModelForm):
     class Meta:
         model = PurchaseRequest
-        exclude = ['request_number', 'requester', 'approved_by', 'approved_date', 'created_at', 'updated_at']
+        exclude = ['request_number', 'requester', 'approved_by', 'approved_date', 'actual_amount', 'created_at', 'updated_at']
         widgets = {
             'items_description': forms.Textarea(attrs={'rows': 4}),
             'remarks': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in ['invoice_attachment', 'items_description', 'reason', 'remarks', 'supplier', 'department']:
+            if field in self.fields:
+                self.fields[field].required = False
 
 
 class PurchaseOrderForm(TailwindMixin, forms.ModelForm):

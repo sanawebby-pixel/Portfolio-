@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -342,6 +342,7 @@ def claim_payment_create(request, pk):
                 related_claim=claim,
                 date=payment.payment_date,
                 created_by=request.user,
+                attachment=payment.receipt_attachment if payment.receipt_attachment else None,
             )
             
             # Record approval workflow step

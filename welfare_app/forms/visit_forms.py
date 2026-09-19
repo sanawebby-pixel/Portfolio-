@@ -50,3 +50,13 @@ class HospitalVisitForm(TailwindMixin, forms.ModelForm):
         self.fields['employee'].queryset = Employee.objects.all().order_by('name')
         self.fields['hospital'].queryset = Hospital.objects.filter(status='Active').order_by('name')
         self.fields['doctor'].queryset = Doctor.objects.filter(status='Active').order_by('name')
+        if 'total_visit_cost' in self.fields:
+            self.fields['total_visit_cost'].required = False
+        if 'attached_document' in self.fields:
+            self.fields['attached_document'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if 'total_visit_cost' in cleaned_data and cleaned_data['total_visit_cost'] in [None, '']:
+            cleaned_data['total_visit_cost'] = 0.00
+        return cleaned_data

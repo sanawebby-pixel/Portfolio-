@@ -251,6 +251,11 @@
                         <!-- Actions -->
                         <td class="px-4 py-3.5 text-right">
                             <div class="flex items-center justify-end gap-1.5">
+                                {% if pr.invoice_attachment %}
+                                <a href="{{ pr.invoice_attachment.url }}" target="_blank" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 transition" title="View / Download Quotation / Invoice Attachment">
+                                    <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                                </a>
+                                {% endif %}
                                 {% if pr.status == 'Pending Approval' %}
                                 <button @click="openApprove({{ pr.id }}, '{{ pr.request_number }}', '{{ pr.item_name|escapejs }}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 text-slate-300 hover:text-emerald-400 transition" title="Approve Request">
                                     <i data-lucide="check" class="w-3.5 h-3.5"></i>

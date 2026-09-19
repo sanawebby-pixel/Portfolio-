@@ -135,6 +135,12 @@
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5">Deposit Slip / Bank Receipt / Payment Voucher Copy</label>
                         <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl">
                             {{ form.attachment }}
+                            {% if form.instance.attachment %}
+                            <div class="mt-2 text-xs text-slate-400 flex items-center gap-2">
+                                <i data-lucide="file-check" class="w-4 h-4 text-emerald-400"></i>
+                                Current file: <a href="{{ form.instance.attachment.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono">{{ form.instance.attachment.name }}</a>
+                            </div>
+                            {% endif %}
                         </div>
                         {% if form.attachment.errors %}<p class="text-[11px] text-rose-400 mt-1">{{ form.attachment.errors.0 }}</p>{% endif %}
                     </div>
