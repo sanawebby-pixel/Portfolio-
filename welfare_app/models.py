@@ -328,9 +328,13 @@ class HospitalVisit(models.Model):
         return 0
 
     def calculate_total_cost(self):
-        itemized = (self.doctor_fee or 0) + (self.medicine_cost or 0) + (self.diagnostic_cost or 0) + (self.other_charges or 0)
-        if itemized > 0 or not self.total_visit_cost:
-            self.total_visit_cost = itemized
+        if self.pk and self.expense_items.exists():
+            total_items = sum((item.cost or 0) for item in self.expense_items.all())
+            self.total_visit_cost = total_items
+        else:
+            itemized = (self.doctor_fee or 0) + (self.medicine_cost or 0) + (self.diagnostic_cost or 0) + (self.other_charges or 0)
+            if itemized > 0 or not self.total_visit_cost:
+                self.total_visit_cost = itemized
         return self.total_visit_cost
 
     def save(self, *args, **kwargs):
@@ -340,6 +344,22 @@ class HospitalVisit(models.Model):
     def __str__(self):
         patient = self.dependent.name if self.dependent else self.employee.name
         return f"Visit ({self.visit_date}) - {patient}"
+
+
+# 8b. Hospital Visit Dynamic Expense Items
+class VisitExpenseItem(models.Model):
+    visit = models.ForeignKey(HospitalVisit, on_delete=models.CASCADE, related_name='expense_items')
+    title = models.CharField(max_length=200, help_text="Expense Title / Category e.g. Medicine, Lab Test, Doctor Fee")
+    cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    document = models.FileField(upload_to='visits/expenses/', blank=True, null=True, help_text="Receipt or Document Scan")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.title}: Rs. {self.cost:,.2f} for Visit #{self.visit_id}"
+
 
 
 

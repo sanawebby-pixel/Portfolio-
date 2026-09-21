@@ -1,11 +1,66 @@
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
-from ..models import HospitalVisit, Employee, Dependent, Hospital, Doctor, MedicalClaim, AuditLog
+from ..models import HospitalVisit, Employee, Dependent, Hospital, Doctor, MedicalClaim, AuditLog, VisitExpenseItem
 from ..forms.visit_forms import HospitalVisitForm
+
+
+def save_visit_expense_items(visit, request):
+    row_indices = request.POST.getlist('expense_row_index')
+    if not row_indices:
+        return
+
+    retained_ids = []
+    total_dynamic_cost = Decimal('0.00')
+
+    for idx in row_indices:
+        title = request.POST.get(f'expense_title_{idx}', '').strip()
+        cost_str = request.POST.get(f'expense_cost_{idx}', '0').replace(',', '').strip()
+        doc_file = request.FILES.get(f'expense_doc_{idx}')
+        existing_id = request.POST.get(f'expense_existing_id_{idx}')
+
+        try:
+            cost_dec = Decimal(cost_str) if cost_str else Decimal('0.00')
+        except (InvalidOperation, ValueError):
+            cost_dec = Decimal('0.00')
+
+        # If row is totally blank and has no file and no existing id, skip it
+        if not title and cost_dec == 0 and not doc_file and not existing_id:
+            continue
+
+        item_title = title if title else 'Medical Expense'
+        total_dynamic_cost += cost_dec
+
+        if existing_id:
+            item = VisitExpenseItem.objects.filter(pk=existing_id, visit=visit).first()
+            if item:
+                item.title = item_title
+                item.cost = cost_dec
+                if doc_file:
+                    item.document = doc_file
+                item.save()
+                retained_ids.append(item.pk)
+        else:
+            item = VisitExpenseItem.objects.create(
+                visit=visit,
+                title=item_title,
+                cost=cost_dec,
+                document=doc_file
+            )
+            retained_ids.append(item.pk)
+
+    # Delete any existing expense items that were deleted/removed by the user in edit mode
+    visit.expense_items.exclude(pk__in=retained_ids).delete()
+
+    # Update visit.total_visit_cost to match the dynamic rows sum
+    if retained_ids:
+        visit.total_visit_cost = total_dynamic_cost
+        visit.save(update_fields=['total_visit_cost'])
+
 
 
 @login_required
@@ -93,6 +148,7 @@ def visit_create(request):
         form = HospitalVisitForm(request.POST, request.FILES)
         if form.is_valid():
             visit = form.save()
+            save_visit_expense_items(visit, request)
             AuditLog.log(
                 user=request.user, action='Created', module='HospitalVisit',
                 record_id=str(visit.pk),
@@ -127,6 +183,7 @@ def visit_update(request, pk):
         form = HospitalVisitForm(request.POST, request.FILES, instance=visit)
         if form.is_valid():
             visit = form.save()
+            save_visit_expense_items(visit, request)
             AuditLog.log(
                 user=request.user, action='Updated', module='HospitalVisit',
                 record_id=str(visit.pk),
@@ -143,9 +200,11 @@ def visit_update(request, pk):
     return render(request, 'welfare_app/visits/form.html', {
         'form': form,
         'visit': visit,
+        'existing_expenses': visit.expense_items.all(),
         'title': f'Edit Hospital Visit Record - {visit.employee.name}',
         'active_nav': 'visits'
     })
+
 
 
 @login_required

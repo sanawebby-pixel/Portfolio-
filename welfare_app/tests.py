@@ -222,20 +222,13 @@ class CoreMedicalOperationsTests(TestCase):
         self.assertContains(res_print, self.claim.claim_number)
 
     def test_visit_itemized_financials_and_calculation(self):
-        # 1. Test Form Render
+        # 1. Test Form Render with dynamic expense rows
         res_form = self.client.get(reverse('visit_create'))
         self.assertEqual(res_form.status_code, 200)
-        self.assertContains(res_form, 'id_doctor_fee')
-        self.assertContains(res_form, 'id_medicine_cost')
-        self.assertContains(res_form, 'id_diagnostic_cost')
-        self.assertContains(res_form, 'id_other_charges')
+        self.assertContains(res_form, 'id="expense-rows-container"', html=False)
+        self.assertContains(res_form, '+ Add Expense', html=False)
         self.assertContains(res_form, 'id_total_visit_cost')
-        self.assertContains(res_form, 'Consultation Fee / Doctor Fee')
-        self.assertContains(res_form, 'Medicine Cost')
-        self.assertContains(res_form, 'Diagnostic & Lab Tests Cost', html=False)
-        self.assertContains(res_form, 'Other Hospital Charges / Miscellaneous')
         self.assertContains(res_form, '5. Financials & Document Scans', html=False)
-
 
         # 2. Test Create with itemized expenses & dummy file upload
         doc_receipt = SimpleUploadedFile("consultation_receipt.pdf", b"Dummy consultation receipt content", content_type="application/pdf")
@@ -302,6 +295,107 @@ class CoreMedicalOperationsTests(TestCase):
         self.assertEqual(float(created_visit.total_visit_cost), 5000.00)
         # Previous file still persisted!
         self.assertTrue(bool(created_visit.doctor_fee_doc))
+
+    def test_visit_dynamic_repeatable_expenses(self):
+        # 1. Create visit with 3 dynamic repeatable rows
+        doc_receipt = SimpleUploadedFile("doctor_bill.pdf", b"Doctor fee bill content", content_type="application/pdf")
+        lab_report = SimpleUploadedFile("lab_report.pdf", b"Lab diagnostic report content", content_type="application/pdf")
+
+        post_data = {
+            'employee': self.emp.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'visit_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'visit_type': 'Emergency',
+            'diagnosis': 'Acute Abdominal Colic',
+            'status': 'Completed',
+            # Dynamic rows indices
+            'expense_row_index': ['1', '2', '3'],
+            'expense_title_1': 'Specialist Surgeon Fee',
+            'expense_cost_1': '2500.00',
+            'expense_doc_1': doc_receipt,
+            'expense_title_2': 'Abdominal Ultrasound & Diagnostics',
+            'expense_cost_2': '3500.00',
+            'expense_doc_2': lab_report,
+            'expense_title_3': 'Emergency Bed Charges',
+            'expense_cost_3': '4000.00',
+        }
+
+        res_create = self.client.post(reverse('visit_create'), post_data)
+        self.assertEqual(res_create.status_code, 302)
+
+        # 2. Verify visit created and total auto-calculated (2500 + 3500 + 4000 = 10000)
+        visit = HospitalVisit.objects.filter(diagnosis='Acute Abdominal Colic').first()
+        self.assertIsNotNone(visit)
+        self.assertEqual(float(visit.total_visit_cost), 10000.00)
+
+        # 3. Verify VisitExpenseItem child records
+        items = visit.expense_items.all()
+        self.assertEqual(items.count(), 3)
+        self.assertEqual(items[0].title, 'Specialist Surgeon Fee')
+        self.assertEqual(float(items[0].cost), 2500.00)
+        self.assertTrue(bool(items[0].document))
+        self.assertEqual(items[1].title, 'Abdominal Ultrasound & Diagnostics')
+        self.assertEqual(float(items[1].cost), 3500.00)
+        self.assertTrue(bool(items[1].document))
+        self.assertEqual(items[2].title, 'Emergency Bed Charges')
+        self.assertEqual(float(items[2].cost), 4000.00)
+
+        # 4. Verify Detail page renders dynamic items & receipts
+        res_detail = self.client.get(reverse('visit_detail', args=[visit.pk]))
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, 'Specialist Surgeon Fee')
+        self.assertContains(res_detail, '2500.00')
+        self.assertContains(res_detail, 'Abdominal Ultrasound &amp; Diagnostics')
+        self.assertContains(res_detail, '3500.00')
+        self.assertContains(res_detail, 'Emergency Bed Charges')
+        self.assertContains(res_detail, '4000.00')
+        self.assertContains(res_detail, '10000.00')
+        self.assertContains(res_detail, '3 Items')
+
+        # 5. Test Update: remove row 3, update cost of row 1, add new row 4
+        item1 = items[0]
+        item2 = items[1]
+        update_data = {
+            'employee': self.emp.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'visit_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'visit_type': 'Emergency',
+            'diagnosis': 'Acute Abdominal Colic - Discharged',
+            'status': 'Completed',
+            'expense_row_index': ['1', '2', '4'],
+            # Row 1 updated
+            'expense_existing_id_1': item1.pk,
+            'expense_title_1': 'Specialist Surgeon Fee - Discounted',
+            'expense_cost_1': '2000.00',
+            # Row 2 kept as-is (file preserved)
+            'expense_existing_id_2': item2.pk,
+            'expense_title_2': item2.title,
+            'expense_cost_2': '3500.00',
+            # Row 3 omitted (deleted by user)
+            # Row 4 newly added
+            'expense_title_4': 'Post-Op Antibiotics & Pharmacy',
+            'expense_cost_4': '1500.00',
+        }
+        res_update = self.client.post(reverse('visit_update', args=[visit.pk]), update_data)
+        self.assertEqual(res_update.status_code, 302)
+
+        visit.refresh_from_db()
+        # New total: 2000 + 3500 + 1500 = 7000
+        self.assertEqual(float(visit.total_visit_cost), 7000.00)
+        updated_items = visit.expense_items.all()
+        self.assertEqual(updated_items.count(), 3)
+        # Verify item 1 updated
+        updated_item1 = updated_items.filter(pk=item1.pk).first()
+        self.assertEqual(updated_item1.title, 'Specialist Surgeon Fee - Discounted')
+        self.assertEqual(float(updated_item1.cost), 2000.00)
+        self.assertTrue(bool(updated_item1.document))  # Preserved!
+        # Verify row 3 was deleted
+        self.assertFalse(visit.expense_items.filter(title='Emergency Bed Charges').exists())
+        # Verify row 4 was created
+        self.assertTrue(visit.expense_items.filter(title='Post-Op Antibiotics & Pharmacy').exists())
+
 
 
 

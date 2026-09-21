@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Department, BenefitRule, Employee, Dependent, Hospital, Doctor, HospitalVisit,
+    Department, BenefitRule, Employee, Dependent, Hospital, Doctor, HospitalVisit, VisitExpenseItem,
     MedicalRecord, MedicalClaim, ClaimExpenseItem, ApprovalWorkflow, ClaimPayment,
     Bill, Budget, FinanceTransaction, Medicine, MedicineTransaction,
     Supplier, PurchaseRequest, PurchaseOrder, Document, Notification,
@@ -8,7 +8,14 @@ from .models import (
 )
 
 
+class VisitExpenseItemInline(admin.TabularInline):
+    model = VisitExpenseItem
+    extra = 1
+    fields = ('title', 'cost', 'document')
+
+
 class ClaimExpenseItemInline(admin.TabularInline):
+
     model = ClaimExpenseItem
     extra = 1
 
@@ -100,10 +107,18 @@ class HospitalVisitAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    inlines = [VisitExpenseItemInline]
 
+
+@admin.register(VisitExpenseItem)
+class VisitExpenseItemAdmin(admin.ModelAdmin):
+    list_display = ('title', 'cost', 'visit', 'document', 'created_at')
+    search_fields = ('title', 'visit__employee__name', 'visit__employee__pl_number')
+    list_filter = ('created_at',)
 
 
 @admin.register(MedicalRecord)
+
 class MedicalRecordAdmin(admin.ModelAdmin):
     list_display = ('bill_no', 'employee', 'hospital', 'doctor', 'treatment_date', 'total_expense', 'status')
     search_fields = ('bill_no', 'employee__name', 'employee__pl_number', 'hospital', 'doctor', 'diagnosis')
