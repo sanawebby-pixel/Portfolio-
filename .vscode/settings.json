@@ -1,0 +1,13 @@
+﻿{
+  "workbench.editorAssociations": {
+    "*.sqlite3": "sqlite-viewer.option",
+    "*.db": "sqlite-viewer.option",
+    "*.sqlite": "sqlite-viewer.option"
+  },
+  "sqlite.databases": [
+    {
+      "name": "Welfare ERP Database",
+      "path": "${workspaceFolder}/db.sqlite3"
+    }
+  ]
+}
