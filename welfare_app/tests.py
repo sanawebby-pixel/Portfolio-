@@ -1,7 +1,9 @@
 import datetime
 from django.test import TestCase, Client
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 from django.urls import reverse
+
 from welfare_app.models import (
     Department, Employee, Dependent, Hospital, Doctor, HospitalVisit,
     MedicalClaim, ClaimExpenseItem, ClaimPayment, ApprovalWorkflow,
@@ -218,4 +220,88 @@ class CoreMedicalOperationsTests(TestCase):
         self.assertTemplateUsed(res_print, 'welfare_app/claims/print_voucher.html')
         self.assertContains(res_print, 'Medical Expense Reimbursement Voucher')
         self.assertContains(res_print, self.claim.claim_number)
+
+    def test_visit_itemized_financials_and_calculation(self):
+        # 1. Test Form Render
+        res_form = self.client.get(reverse('visit_create'))
+        self.assertEqual(res_form.status_code, 200)
+        self.assertContains(res_form, 'id_doctor_fee')
+        self.assertContains(res_form, 'id_medicine_cost')
+        self.assertContains(res_form, 'id_diagnostic_cost')
+        self.assertContains(res_form, 'id_other_charges')
+        self.assertContains(res_form, 'id_total_visit_cost')
+        self.assertContains(res_form, 'Consultation Fee / Doctor Fee')
+        self.assertContains(res_form, 'Medicine Cost')
+        self.assertContains(res_form, 'Diagnostic & Lab Tests Cost', html=False)
+        self.assertContains(res_form, 'Other Hospital Charges / Miscellaneous')
+        self.assertContains(res_form, '5. Financials & Document Scans', html=False)
+
+
+        # 2. Test Create with itemized expenses & dummy file upload
+        doc_receipt = SimpleUploadedFile("consultation_receipt.pdf", b"Dummy consultation receipt content", content_type="application/pdf")
+        med_slip = SimpleUploadedFile("pharmacy_bill.pdf", b"Dummy pharmacy bill content", content_type="application/pdf")
+
+        post_data = {
+            'employee': self.emp.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'visit_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'visit_type': 'OPD',
+            'diagnosis': 'Seasonal Flu & Allergy',
+            'doctor_fee': '2000.00',
+            'doctor_fee_doc': doc_receipt,
+            'medicine_cost': '1500.00',
+            'medicine_doc': med_slip,
+            'diagnostic_cost': '800.00',
+            'other_charges': '200.00',
+            'status': 'Completed'
+        }
+
+        res_post = self.client.post(reverse('visit_create'), post_data)
+        self.assertEqual(res_post.status_code, 302)
+
+        # 3. Verify saved record & auto-calculated total (2000 + 1500 + 800 + 200 = 4500)
+        created_visit = HospitalVisit.objects.filter(diagnosis='Seasonal Flu & Allergy').first()
+        self.assertIsNotNone(created_visit)
+        self.assertEqual(float(created_visit.doctor_fee), 2000.00)
+        self.assertEqual(float(created_visit.medicine_cost), 1500.00)
+        self.assertEqual(float(created_visit.diagnostic_cost), 800.00)
+        self.assertEqual(float(created_visit.other_charges), 200.00)
+        self.assertEqual(float(created_visit.total_visit_cost), 4500.00)
+        self.assertTrue(bool(created_visit.doctor_fee_doc))
+        self.assertTrue(bool(created_visit.medicine_doc))
+
+        # 4. Verify Detail View displays all expenses & file links
+        res_detail = self.client.get(reverse('visit_detail', args=[created_visit.pk]))
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, '2000.00')
+        self.assertContains(res_detail, '1500.00')
+        self.assertContains(res_detail, '800.00')
+        self.assertContains(res_detail, '200.00')
+        self.assertContains(res_detail, '4500.00')
+
+        # 5. Verify Update preserves uploaded file without re-uploading
+        update_data = {
+            'employee': self.emp.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'visit_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'visit_type': 'OPD',
+            'diagnosis': 'Seasonal Flu & Allergy - Followup',
+            'doctor_fee': '2500.00',
+            'medicine_cost': '1500.00',
+            'diagnostic_cost': '800.00',
+            'other_charges': '200.00',
+            'status': 'Completed'
+        }
+        res_update = self.client.post(reverse('visit_update', args=[created_visit.pk]), update_data)
+        self.assertEqual(res_update.status_code, 302)
+
+        created_visit.refresh_from_db()
+        self.assertEqual(float(created_visit.doctor_fee), 2500.00)
+        self.assertEqual(float(created_visit.total_visit_cost), 5000.00)
+        # Previous file still persisted!
+        self.assertTrue(bool(created_visit.doctor_fee_doc))
+
+
 

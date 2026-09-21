@@ -218,46 +218,232 @@
                 </div>
             </div>
 
-            <!-- Section 5: Financials & Attachment -->
+            <!-- Section 5: Financials & Document Scans -->
             <div>
-                <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider pb-2 mb-4 border-b border-slate-800 flex items-center gap-2">
-                    <i data-lucide="receipt" class="w-4 h-4"></i>
-                    5. Financials & Document Scans
-                </h3>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-2 mb-4 border-b border-slate-800 gap-2">
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="receipt" class="w-4 h-4"></i>
+                        5. Financials & Document Scans
+                    </h3>
+                    <span class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Itemized expenses with paired file upload scans
+                    </span>
+                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                            Total Visit Cost / Charges (Rs.)
-                        </label>
-                        {{ form.total_visit_cost }}
-                        {% if form.total_visit_cost.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.total_visit_cost.errors }}</div>{% endif %}
-                    </div>
+                <div class="space-y-4">
+                    <!-- Itemized Expenses Grid -->
+                    <div class="grid grid-cols-1 gap-4">
 
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                            Attach Prescription / Discharge Slip / Bill Scan
-                        </label>
-                        {{ form.attached_document }}
-                        {% if form.instance.attached_document %}
-                        <div class="mt-2 text-xs text-slate-400 flex items-center gap-2">
-                            <i data-lucide="paperclip" class="w-4 h-4 text-emerald-400"></i>
-                            <span>Current file:</span>
-                            <a href="{{ form.instance.attached_document.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono">{{ form.instance.attached_document.name }}</a>
+                        <!-- 1. Consultation Fee / Doctor Fee -->
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                                        <i data-lucide="stethoscope" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-white">Consultation Fee / Doctor Fee</span>
+                                </div>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">Doctor Charges</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Amount (Rs.)
+                                    </label>
+                                    {{ form.doctor_fee }}
+                                    {% if form.doctor_fee.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.doctor_fee.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Doctor Fee Slip / Consultation Receipt Scan
+                                    </label>
+                                    {{ form.doctor_fee_doc }}
+                                    {% if form.instance.doctor_fee_doc %}
+                                    <div class="mt-1.5 text-xs text-slate-400 flex items-center gap-1.5">
+                                        <i data-lucide="paperclip" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        <span>Current:</span>
+                                        <a href="{{ form.instance.doctor_fee_doc.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono truncate max-w-[220px]">{{ form.instance.doctor_fee_doc.name }}</a>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.doctor_fee_doc.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.doctor_fee_doc.errors }}</div>{% endif %}
+                                </div>
+                            </div>
                         </div>
-                        {% endif %}
-                        {% if form.attached_document.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.attached_document.errors }}</div>{% endif %}
+
+                        <!-- 2. Medicine Cost -->
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+                                        <i data-lucide="pill" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-white">Medicine Cost</span>
+                                </div>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20">Pharmacy</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Amount (Rs.)
+                                    </label>
+                                    {{ form.medicine_cost }}
+                                    {% if form.medicine_cost.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.medicine_cost.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Medicine Bill / Pharmacy Slip Scan
+                                    </label>
+                                    {{ form.medicine_doc }}
+                                    {% if form.instance.medicine_doc %}
+                                    <div class="mt-1.5 text-xs text-slate-400 flex items-center gap-1.5">
+                                        <i data-lucide="paperclip" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        <span>Current:</span>
+                                        <a href="{{ form.instance.medicine_doc.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono truncate max-w-[220px]">{{ form.instance.medicine_doc.name }}</a>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.medicine_doc.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.medicine_doc.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Diagnostic & Lab Tests Cost -->
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                                        <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-white">Diagnostic & Lab Tests Cost</span>
+                                </div>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Pathology & Radiology</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Amount (Rs.)
+                                    </label>
+                                    {{ form.diagnostic_cost }}
+                                    {% if form.diagnostic_cost.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.diagnostic_cost.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Diagnostic / Lab Bill & Report Scan
+                                    </label>
+                                    {{ form.diagnostic_doc }}
+                                    {% if form.instance.diagnostic_doc %}
+                                    <div class="mt-1.5 text-xs text-slate-400 flex items-center gap-1.5">
+                                        <i data-lucide="paperclip" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        <span>Current:</span>
+                                        <a href="{{ form.instance.diagnostic_doc.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono truncate max-w-[220px]">{{ form.instance.diagnostic_doc.name }}</a>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.diagnostic_doc.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.diagnostic_doc.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Other Hospital Charges / Miscellaneous -->
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                        <i data-lucide="receipt" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-white">Other Hospital Charges / Miscellaneous</span>
+                                </div>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Misc / Facility</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Amount (Rs.)
+                                    </label>
+                                    {{ form.other_charges }}
+                                    {% if form.other_charges.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.other_charges.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        Other Charges Invoice / Receipt Scan
+                                    </label>
+                                    {{ form.other_charges_doc }}
+                                    {% if form.instance.other_charges_doc %}
+                                    <div class="mt-1.5 text-xs text-slate-400 flex items-center gap-1.5">
+                                        <i data-lucide="paperclip" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        <span>Current:</span>
+                                        <a href="{{ form.instance.other_charges_doc.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono truncate max-w-[220px]">{{ form.instance.other_charges_doc.name }}</a>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.other_charges_doc.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.other_charges_doc.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <div class="sm:col-span-2">
-                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                            Medical Remarks & Special Instructions
-                        </label>
-                        {{ form.remarks }}
-                        {% if form.remarks.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.remarks.errors }}</div>{% endif %}
+                    <!-- 5. Total Cost (Auto-calculated Box) -->
+                    <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border-2 border-emerald-500/40 shadow-lg">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400">
+                                        <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                                    </span>
+                                    <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                                        Total Cost (Auto-calculated)
+                                    </label>
+                                    <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        Sum of All 4 Expenses
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">
+                                    Automatically computed in real time from Consultation Fee, Medicine, Lab, and Other charges.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3 self-end sm:self-center">
+                                <div class="text-right">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Live Sum</span>
+                                    <div class="text-xl sm:text-2xl font-bold font-mono text-emerald-400">
+                                        Rs. <span id="visual_total_cost">0.00</span>
+                                    </div>
+                                </div>
+                                <div class="w-36">
+                                    {{ form.total_visit_cost }}
+                                    {% if form.total_visit_cost.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.total_visit_cost.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- General Document Attachment & Remarks -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                                General Prescription / Discharge Slip / Document Scan
+                            </label>
+                            {{ form.attached_document }}
+                            {% if form.instance.attached_document %}
+                            <div class="mt-2 text-xs text-slate-400 flex items-center gap-2">
+                                <i data-lucide="paperclip" class="w-4 h-4 text-emerald-400"></i>
+                                <span>Current file:</span>
+                                <a href="{{ form.instance.attached_document.url }}" target="_blank" class="text-cyan-400 hover:underline font-mono">{{ form.instance.attached_document.name }}</a>
+                            </div>
+                            {% endif %}
+                            {% if form.attached_document.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.attached_document.errors }}</div>{% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                                Medical Remarks & Special Instructions
+                            </label>
+                            {{ form.remarks }}
+                            {% if form.remarks.errors %}<div class="text-rose-400 text-[10px] mt-1">{{ form.remarks.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
 
             <!-- Form Actions -->
             <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
@@ -302,6 +488,49 @@
                 }
             });
         }
+
+        // Real-time calculation of Total Visit Cost from itemized expenses
+        function calculateTotalExpenses() {
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                if (!el || !el.value) return 0;
+                const val = parseFloat(el.value.replace(/,/g, ''));
+                return isNaN(val) ? 0 : val;
+            };
+
+            const docFee = getVal('id_doctor_fee');
+            const medCost = getVal('id_medicine_cost');
+            const diagCost = getVal('id_diagnostic_cost');
+            const otherCost = getVal('id_other_charges');
+
+            const total = docFee + medCost + diagCost + otherCost;
+
+            const totalInput = document.getElementById('id_total_visit_cost');
+            const visualDisplay = document.getElementById('visual_total_cost');
+
+            if (totalInput) {
+                totalInput.value = total.toFixed(2);
+            }
+            if (visualDisplay) {
+                visualDisplay.textContent = total.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+        }
+
+        const feeFieldIds = ['id_doctor_fee', 'id_medicine_cost', 'id_diagnostic_cost', 'id_other_charges'];
+        feeFieldIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', calculateTotalExpenses);
+                el.addEventListener('change', calculateTotalExpenses);
+                el.addEventListener('keyup', calculateTotalExpenses);
+            }
+        });
+
+        // Initialize calculation on page load
+        calculateTotalExpenses();
     });
 </script>
 {% endblock %}

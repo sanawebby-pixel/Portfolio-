@@ -75,10 +75,32 @@ class DoctorAdmin(admin.ModelAdmin):
 
 @admin.register(HospitalVisit)
 class HospitalVisitAdmin(admin.ModelAdmin):
-    list_display = ('employee', 'dependent', 'hospital', 'doctor', 'visit_date', 'visit_type', 'total_visit_cost', 'status')
+    list_display = ('employee', 'dependent', 'hospital', 'doctor', 'visit_date', 'visit_type', 'doctor_fee', 'medicine_cost', 'diagnostic_cost', 'other_charges', 'total_visit_cost', 'status')
     search_fields = ('employee__name', 'employee__pl_number', 'diagnosis', 'hospital__name', 'doctor__name')
     list_filter = ('visit_type', 'status', 'visit_date')
     date_hierarchy = 'visit_date'
+    fieldsets = (
+        ('Encounter Information', {
+            'fields': ('employee', 'dependent', 'hospital', 'hospital_name', 'doctor', 'doctor_name', 'department_specialization', 'visit_date', 'visit_type', 'status')
+        }),
+        ('Clinical Findings', {
+            'fields': ('diagnosis', 'symptoms', 'treatment', 'prescription', 'lab_tests', 'medical_notes')
+        }),
+        ('Itemized Financials & Document Scans', {
+            'fields': (
+                ('doctor_fee', 'doctor_fee_doc'),
+                ('medicine_cost', 'medicine_doc'),
+                ('diagnostic_cost', 'diagnostic_doc'),
+                ('other_charges', 'other_charges_doc'),
+                ('total_visit_cost', 'attached_document'),
+            )
+        }),
+        ('Inpatient & Follow-up', {
+            'fields': ('admission_date', 'discharge_date', 'room_ward', 'followup_date', 'remarks'),
+            'classes': ('collapse',)
+        }),
+    )
+
 
 
 @admin.register(MedicalRecord)

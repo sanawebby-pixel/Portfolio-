@@ -293,8 +293,22 @@ class HospitalVisit(models.Model):
     prescription = models.TextField(blank=True, null=True)
     lab_tests = models.TextField(blank=True, null=True)
     medical_notes = models.TextField(blank=True, null=True)
-    total_visit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    attached_document = models.FileField(upload_to='visits/', blank=True, null=True)
+
+    # Itemized Breakdown of Expenses & Paired Document Scans
+    doctor_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True, null=True, verbose_name="Consultation Fee / Doctor Fee")
+    doctor_fee_doc = models.FileField(upload_to='visits/consultation/', blank=True, null=True, verbose_name="Doctor Fee Slip / Receipt")
+
+    medicine_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True, null=True, verbose_name="Medicine Cost")
+    medicine_doc = models.FileField(upload_to='visits/medicine/', blank=True, null=True, verbose_name="Medicine Bill / Pharmacy Slip")
+
+    diagnostic_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True, null=True, verbose_name="Diagnostic & Lab Tests Cost")
+    diagnostic_doc = models.FileField(upload_to='visits/diagnostic/', blank=True, null=True, verbose_name="Diagnostic / Lab Bill & Report")
+
+    other_charges = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True, null=True, verbose_name="Other Hospital Charges / Miscellaneous")
+    other_charges_doc = models.FileField(upload_to='visits/other/', blank=True, null=True, verbose_name="Other Charges Invoice / Receipt")
+
+    total_visit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Total Visit Cost")
+    attached_document = models.FileField(upload_to='visits/', blank=True, null=True, verbose_name="General Attached Document")
     remarks = models.TextField(blank=True, null=True)
     admission_date = models.DateField(blank=True, null=True)
     discharge_date = models.DateField(blank=True, null=True)
@@ -313,9 +327,20 @@ class HospitalVisit(models.Model):
             return max(1, (self.discharge_date - self.admission_date).days)
         return 0
 
+    def calculate_total_cost(self):
+        itemized = (self.doctor_fee or 0) + (self.medicine_cost or 0) + (self.diagnostic_cost or 0) + (self.other_charges or 0)
+        if itemized > 0 or not self.total_visit_cost:
+            self.total_visit_cost = itemized
+        return self.total_visit_cost
+
+    def save(self, *args, **kwargs):
+        self.calculate_total_cost()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         patient = self.dependent.name if self.dependent else self.employee.name
         return f"Visit ({self.visit_date}) - {patient}"
+
 
 
 # 9. Medical Claim (Main Core Module)

@@ -212,24 +212,96 @@
                 </div>
             </div>
 
-            <!-- Attached Medical Document Card -->
-            {% if visit.attached_document %}
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2 pb-3 mb-3 border-b border-slate-800">
-                    <i data-lucide="paperclip" class="w-4 h-4 text-cyan-400"></i>
-                    Attached Document Scan
-                </h3>
-                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 border border-slate-700">
-                    <div class="truncate max-w-[150px]">
-                        <div class="text-xs font-bold text-white truncate">{{ visit.attached_document.name|slice:"7:" }}</div>
-                        <div class="text-[10px] text-slate-400">Prescription / Slip</div>
+            <!-- Financial Breakdown & Attached Receipts Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-3.5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="receipt" class="w-4 h-4 text-emerald-400"></i>
+                        Financial Breakdown & Invoices
+                    </h3>
+                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        Itemized
+                    </span>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                    <!-- Doctor Fee -->
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold">Consultation / Doctor Fee</div>
+                            <div class="text-white font-mono font-bold text-sm">Rs. {{ visit.doctor_fee|floatformat:2|default:"0.00" }}</div>
+                        </div>
+                        {% if visit.doctor_fee_doc %}
+                        <a href="{{ visit.doctor_fee_doc.url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 text-[11px] font-semibold border border-sky-500/30 transition">
+                            <i data-lucide="paperclip" class="w-3 h-3"></i> Receipt
+                        </a>
+                        {% endif %}
                     </div>
-                    <a href="{{ visit.attached_document.url }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition">
-                        View File
-                    </a>
+
+                    <!-- Medicine Cost -->
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold">Medicine Cost</div>
+                            <div class="text-white font-mono font-bold text-sm">Rs. {{ visit.medicine_cost|floatformat:2|default:"0.00" }}</div>
+                        </div>
+                        {% if visit.medicine_doc %}
+                        <a href="{{ visit.medicine_doc.url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 text-[11px] font-semibold border border-teal-500/30 transition">
+                            <i data-lucide="paperclip" class="w-3 h-3"></i> Slip
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Diagnostic & Lab -->
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold">Diagnostic & Lab Tests</div>
+                            <div class="text-white font-mono font-bold text-sm">Rs. {{ visit.diagnostic_cost|floatformat:2|default:"0.00" }}</div>
+                        </div>
+                        {% if visit.diagnostic_doc %}
+                        <a href="{{ visit.diagnostic_doc.url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-[11px] font-semibold border border-amber-500/30 transition">
+                            <i data-lucide="paperclip" class="w-3 h-3"></i> Report
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Other Charges -->
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold">Other Charges / Misc</div>
+                            <div class="text-white font-mono font-bold text-sm">Rs. {{ visit.other_charges|floatformat:2|default:"0.00" }}</div>
+                        </div>
+                        {% if visit.other_charges_doc %}
+                        <a href="{{ visit.other_charges_doc.url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[11px] font-semibold border border-indigo-500/30 transition">
+                            <i data-lucide="paperclip" class="w-3 h-3"></i> Invoice
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Total Visit Cost -->
+                    <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between">
+                        <div>
+                            <div class="text-emerald-400 text-[10px] uppercase font-bold">Total Visit Cost</div>
+                            <div class="text-[10px] text-slate-400">Sum of All Expenses</div>
+                        </div>
+                        <div class="text-emerald-400 font-mono font-extrabold text-base">
+                            Rs. {{ visit.total_visit_cost|floatformat:2 }}
+                        </div>
+                    </div>
+
+                    <!-- General Attachment if any -->
+                    {% if visit.attached_document %}
+                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <div class="truncate max-w-[140px]">
+                            <div class="text-[10px] text-slate-400 uppercase font-bold">General Document</div>
+                            <div class="text-xs text-slate-200 truncate">{{ visit.attached_document.name|slice:"7:" }}</div>
+                        </div>
+                        <a href="{{ visit.attached_document.url }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold shadow-sm transition">
+                            View File
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
 
         </div>
 
