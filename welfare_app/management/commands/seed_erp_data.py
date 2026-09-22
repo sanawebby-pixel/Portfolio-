@@ -13,10 +13,11 @@ from welfare_app.models import (
 
 
 class Command(BaseCommand):
-    help = 'Seeds complete, realistic Factory Welfare Department ERP data'
+    help = 'Seeds database with realistic, high-volume healthcare ERP data for factory employees and panel hospitals.'
 
     def handle(self, *args, **options):
-        self.stdout.write('Starting Factory Welfare ERP Data Seeder...')
+        self.stdout.write('Starting BrassHealth System Data Seeder...')
+
 
         # 1. Admin User
         admin_user, _ = User.objects.get_or_create(
@@ -363,8 +364,9 @@ class Command(BaseCommand):
         # 12. Notifications
         Notification.objects.get_or_create(
             user=admin_user,
-            title='Welfare ERP System Online',
-            defaults={'message': 'Factory Welfare & Hospital Management ERP is live with all modules active.', 'notification_type': 'Success', 'is_read': False}
+            title='BrassHealth System Online',
+            defaults={'message': 'BrassHealth System is live with all modules active.', 'notification_type': 'Success', 'is_read': False}
         )
 
-        self.stdout.write(self.style.SUCCESS('Factory Welfare ERP data successfully seeded!'))
+        self.stdout.write(self.style.SUCCESS('BrassHealth System data successfully seeded!'))
+

@@ -3,7 +3,7 @@ from .models import Notification
 def welfare_context(request):
     """Global context processor for all templates."""
     context = {
-        'app_name': 'Welfare ERP',
+        'app_name': 'BrassHealth System',
         'app_subtitle': 'Hospital Management System',
     }
     if request.user.is_authenticated:

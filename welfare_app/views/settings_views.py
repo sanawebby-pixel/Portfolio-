@@ -323,7 +323,7 @@ def seed_demo_data(request):
                 record_repr="Executed seed_erp_data command to initialize ERP demo records.",
                 ip_address=getattr(request, 'client_ip', None)
             )
-            messages.success(request, "Factory Welfare ERP demo data initialized successfully! All departments, panel hospitals, medicines, doctors, claims and budgets are ready.")
+            messages.success(request, "BrassHealth System demo data initialized successfully! All departments, panel hospitals, medicines, doctors, claims and budgets are ready.")
         except Exception as e:
             messages.error(request, f"Failed to seed demo data: {str(e)}")
         return redirect('settings_index')
