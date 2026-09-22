@@ -7,7 +7,7 @@ from django.urls import reverse
 from welfare_app.models import (
     Department, Employee, Dependent, Hospital, Doctor, HospitalVisit,
     MedicalClaim, ClaimExpenseItem, ClaimPayment, ApprovalWorkflow,
-    Bill, Budget, Medicine, Supplier, UserProfile
+    Bill, BillDocument, Budget, Medicine, Supplier, UserProfile
 )
 
 
@@ -481,6 +481,105 @@ class CoreMedicalOperationsTests(TestCase):
         self.assertNotIn('Inventory & Supply', content)
         self.assertNotIn('href="/inventory/', content)
         self.assertNotIn('href="/procurement/', content)
+
+    def test_bill_dynamic_documentation_and_remarks(self):
+        # 1. Test Bill Create Page renders + buttons and dynamic container
+        res_form = self.client.get(reverse('bill_create'))
+        self.assertEqual(res_form.status_code, 200)
+        self.assertContains(res_form, 'id="add-bill-doc-btn"', html=False)
+        self.assertContains(res_form, 'class="trigger-add-doc-btn', html=False)
+        self.assertContains(res_form, 'id="dynamic-docs-container"', html=False)
+        self.assertContains(res_form, '4. Documentation & Voucher Remarks', html=False)
+
+        # 2. Test Bill Creation with primary attachment and 2 dynamic entries
+        primary_file = SimpleUploadedFile("hospital_invoice.pdf", b"Primary Hospital Consolidated Invoice", content_type="application/pdf")
+        doc1 = SimpleUploadedFile("lab_slip.pdf", b"Diagnostic Lab Slip Receipt", content_type="application/pdf")
+        doc2 = SimpleUploadedFile("pharmacy_receipt.png", b"Pharmacy medicine receipt image data", content_type="image/png")
+
+        post_data = {
+            'bill_number': 'INV-2026-9901',
+            'bill_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'category': 'Hospital Bill',
+            'hospital': self.hospital.pk,
+            'amount': '12500.00',
+            'status': 'Pending',
+            'payment_status': 'Unpaid',
+            'payment_method': 'Bank Transfer',
+            'description': 'Consolidated March Panel Hospital Invoice',
+            'attachment': primary_file,
+            # Dynamic documentation rows
+            'bill_doc_index': ['1', '2'],
+            'bill_doc_remark_1': 'Detailed Diagnostic Lab Tests Breakdown',
+            'bill_doc_file_1': doc1,
+            'bill_doc_remark_2': 'Post-Op Pharmacy Disbursed Medication Receipt',
+            'bill_doc_file_2': doc2,
+        }
+
+        res_create = self.client.post(reverse('bill_create'), post_data)
+        self.assertEqual(res_create.status_code, 302)
+
+        # 3. Verify bill created and child BillDocument objects persisted
+        bill = Bill.objects.filter(bill_number='INV-2026-9901').first()
+        self.assertIsNotNone(bill)
+        self.assertEqual(float(bill.amount), 12500.00)
+        self.assertTrue(bool(bill.attachment))
+
+        attachments = bill.attachments.all()
+        self.assertEqual(attachments.count(), 2)
+        self.assertEqual(attachments[0].description, 'Detailed Diagnostic Lab Tests Breakdown')
+        self.assertTrue(bool(attachments[0].document))
+        self.assertEqual(attachments[1].description, 'Post-Op Pharmacy Disbursed Medication Receipt')
+        self.assertTrue(bool(attachments[1].document))
+
+        # 4. Verify Bill List renders dynamic attachments count badge
+        res_list = self.client.get(reverse('bill_list'))
+        self.assertEqual(res_list.status_code, 200)
+        self.assertContains(res_list, 'INV-2026-9901')
+        self.assertContains(res_list, '+2')
+
+        # 5. Test Bill Edit: update remark 1, remove remark 2, add remark 3
+        att1 = attachments[0]
+        doc3 = SimpleUploadedFile("consultant_fee_slip.pdf", b"Surgeon fee slip receipt", content_type="application/pdf")
+
+        update_data = {
+            'bill_number': 'INV-2026-9901',
+            'bill_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'category': 'Hospital Bill',
+            'hospital': self.hospital.pk,
+            'amount': '15000.00',
+            'status': 'Approved',
+            'payment_status': 'Unpaid',
+            'payment_method': 'Bank Transfer',
+            'description': 'Consolidated March Panel Hospital Invoice - Verified',
+            # Row 1 updated (file preserved)
+            'bill_doc_index': ['1', '3'],
+            'bill_doc_existing_id_1': att1.pk,
+            'bill_doc_remark_1': 'Detailed Diagnostic Lab Tests Breakdown - Audited',
+            # Row 2 omitted (deleted)
+            # Row 3 newly added
+            'bill_doc_remark_3': 'Surgeon Specialist Fee Voucher',
+            'bill_doc_file_3': doc3,
+        }
+
+        res_update = self.client.post(reverse('bill_update', args=[bill.pk]), update_data)
+        self.assertEqual(res_update.status_code, 302)
+
+        bill.refresh_from_db()
+        self.assertEqual(float(bill.amount), 15000.00)
+        self.assertEqual(bill.status, 'Approved')
+
+        updated_attachments = bill.attachments.all()
+        self.assertEqual(updated_attachments.count(), 2)
+        # Verify att1 updated and file preserved
+        updated_att1 = updated_attachments.filter(pk=att1.pk).first()
+        self.assertIsNotNone(updated_att1)
+        self.assertEqual(updated_att1.description, 'Detailed Diagnostic Lab Tests Breakdown - Audited')
+        self.assertTrue(bool(updated_att1.document))
+        # Verify row 2 was removed
+        self.assertFalse(bill.attachments.filter(description='Post-Op Pharmacy Disbursed Medication Receipt').exists())
+        # Verify row 3 was added
+        self.assertTrue(bill.attachments.filter(description='Surgeon Specialist Fee Voucher').exists())
+
 
 
 

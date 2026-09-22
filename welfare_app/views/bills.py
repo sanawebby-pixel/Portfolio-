@@ -6,14 +6,51 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
 
-from ..models import Bill, Hospital, Employee, AuditLog
+from ..models import Bill, BillDocument, Hospital, Employee, AuditLog
 from ..forms.bill_forms import BillForm
+
+
+def save_bill_attachments(bill, request):
+    """Save or update dynamic documentation attachments and voucher remarks."""
+    row_indices = request.POST.getlist('bill_doc_index')
+    if not row_indices:
+        return
+
+    retained_ids = []
+    for idx in row_indices:
+        description = request.POST.get(f'bill_doc_remark_{idx}', '').strip()
+        doc_file = request.FILES.get(f'bill_doc_file_{idx}')
+        existing_id = request.POST.get(f'bill_doc_existing_id_{idx}')
+
+        # If completely empty with no existing record, skip
+        if not description and not doc_file and not existing_id:
+            continue
+
+        if existing_id:
+            item = BillDocument.objects.filter(pk=existing_id, bill=bill).first()
+            if item:
+                item.description = description
+                if doc_file:
+                    item.document = doc_file
+                item.save()
+                retained_ids.append(item.pk)
+        else:
+            item = BillDocument.objects.create(
+                bill=bill,
+                description=description,
+                document=doc_file
+            )
+            retained_ids.append(item.pk)
+
+    # Delete any existing attachments that were removed by the user
+    bill.attachments.exclude(pk__in=retained_ids).delete()
+
 
 
 @login_required
 def bill_list(request):
     """List, search, filter, and summarize bills and medical expenses."""
-    bills = Bill.objects.select_related('hospital', 'employee', 'approved_by', 'created_by').all()
+    bills = Bill.objects.select_related('hospital', 'employee', 'approved_by', 'created_by').prefetch_related('attachments').all()
     
     # URL Query Parameters
     q = request.GET.get('q', '').strip()
@@ -123,6 +160,7 @@ def bill_create(request):
             if bill.status == 'Approved' and not bill.approved_by:
                 bill.approved_by = request.user
             bill.save()
+            save_bill_attachments(bill, request)
 
             AuditLog.log(
                 user=request.user,
@@ -158,6 +196,7 @@ def bill_update(request, pk):
             if updated_bill.status == 'Approved' and not updated_bill.approved_by:
                 updated_bill.approved_by = request.user
             updated_bill.save()
+            save_bill_attachments(updated_bill, request)
 
             AuditLog.log(
                 user=request.user,
@@ -175,12 +214,24 @@ def bill_update(request, pk):
     else:
         form = BillForm(instance=bill)
 
+    existing_attachments = [
+        {
+            'id': att.pk,
+            'description': att.description or '',
+            'doc_url': att.document.url if att.document else '',
+            'doc_name': att.document.name.split('/')[-1] if att.document else '',
+        }
+        for att in bill.attachments.all()
+    ]
+
     return render(request, 'welfare_app/bills/form.html', {
         'form': form,
         'bill': bill,
         'is_edit': True,
+        'existing_attachments': existing_attachments,
         'active_nav': 'bills_expenses',
     })
+
 
 
 @login_required

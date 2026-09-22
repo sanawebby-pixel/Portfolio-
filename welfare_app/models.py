@@ -633,7 +633,23 @@ class Bill(models.Model):
         return f"{self.bill_number} - Rs. {self.amount:,.0f} ({self.category})"
 
 
+# 13b. Bill Dynamic Documents & Voucher Remarks
+class BillDocument(models.Model):
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='attachments')
+    description = models.TextField(blank=True, null=True, help_text="Expense description / voucher remark")
+    document = models.FileField(upload_to='bills/documents/', blank=True, null=True, help_text="Attached document or receipt")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        desc = (self.description[:40] + '...') if self.description and len(self.description) > 40 else (self.description or 'Attachment')
+        return f"Document for Bill #{self.bill.bill_number}: {desc}"
+
+
 # 14. Departmental Budgets
+
 class Budget(models.Model):
     CATEGORY_CHOICES = [
         ('Medical', 'Medical Welfare Fund'),

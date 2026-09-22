@@ -2,9 +2,10 @@ from django.contrib import admin
 from .models import (
     Department, BenefitRule, Employee, Dependent, Hospital, Doctor, HospitalVisit, VisitExpenseItem,
     MedicalRecord, MedicalClaim, ClaimExpenseItem, ApprovalWorkflow, ClaimPayment,
-    Bill, Budget, FinanceTransaction, Document, Notification,
+    Bill, BillDocument, Budget, FinanceTransaction, Document, Notification,
     AuditLog, UserProfile
 )
+
 
 
 class VisitExpenseItemInline(admin.TabularInline):
@@ -158,12 +159,26 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
     date_hierarchy = 'action_date'
 
 
+class BillDocumentInline(admin.TabularInline):
+    model = BillDocument
+    extra = 1
+    fields = ('description', 'document')
+
+
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):
     list_display = ('bill_number', 'bill_date', 'category', 'hospital', 'vendor_name', 'employee', 'amount', 'status', 'payment_status')
     search_fields = ('bill_number', 'vendor_name', 'employee__name')
     list_filter = ('status', 'payment_status', 'category', 'bill_date')
     date_hierarchy = 'bill_date'
+    inlines = [BillDocumentInline]
+
+
+@admin.register(BillDocument)
+class BillDocumentAdmin(admin.ModelAdmin):
+    list_display = ('bill', 'description', 'document', 'created_at')
+    search_fields = ('bill__bill_number', 'description')
+
 
 
 @admin.register(Budget)
