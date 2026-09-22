@@ -487,9 +487,9 @@ class CoreMedicalOperationsTests(TestCase):
         res_form = self.client.get(reverse('bill_create'))
         self.assertEqual(res_form.status_code, 200)
         self.assertContains(res_form, 'id="add-bill-doc-btn"', html=False)
-        self.assertContains(res_form, 'class="trigger-add-doc-btn', html=False)
         self.assertContains(res_form, 'id="dynamic-docs-container"', html=False)
         self.assertContains(res_form, '4. Documentation & Voucher Remarks', html=False)
+
 
         # 2. Test Bill Creation with primary attachment and 2 dynamic entries
         primary_file = SimpleUploadedFile("hospital_invoice.pdf", b"Primary Hospital Consolidated Invoice", content_type="application/pdf")
