@@ -47,7 +47,7 @@
               <span class="text-[10px] text-slate-500 font-mono">.csv</span>
             </a>
           </div>
-          <div class="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-slate-400">HR & Inventory</div>
+          <div class="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-slate-400">HR & Budget</div>
           <div class="py-1">
             <a href="{% url 'export_report' 'employees' %}?format=excel" class="flex items-center justify-between px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-emerald-400">
               <span>Employee Benefits (Excel)</span>
@@ -55,10 +55,6 @@
             </a>
             <a href="{% url 'export_report' 'budget' %}?format=excel" class="flex items-center justify-between px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-emerald-400">
               <span>Budget Variance (Excel)</span>
-              <span class="text-[10px] text-emerald-500 font-mono">.xls</span>
-            </a>
-            <a href="{% url 'export_report' 'inventory' %}?format=excel" class="flex items-center justify-between px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-emerald-400">
-              <span>Pharmacy Stock (Excel)</span>
               <span class="text-[10px] text-emerald-500 font-mono">.xls</span>
             </a>
           </div>
@@ -123,16 +119,16 @@
       <div class="text-[10px] text-slate-500 mt-1">Allocated Departmental</div>
     </div>
 
-    <div class="bg-slate-900/80 border border-teal-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
+    <div class="bg-slate-900/80 border border-violet-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">
       <div class="flex items-center justify-between">
-        <span class="text-[11px] font-semibold text-teal-400 uppercase tracking-wider">Pharmacy Stock</span>
-        <i data-lucide="pill" class="w-4 h-4 text-teal-400"></i>
+        <span class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Medical Specialists</span>
+        <i data-lucide="stethoscope" class="w-4 h-4 text-violet-400"></i>
       </div>
       <div class="mt-2">
-        <div class="text-lg font-bold text-teal-400 font-mono">Rs. {{ stats.stock_value|floatformat:0 }}</div>
-        <div class="text-[11px] text-rose-400 font-mono mt-0.5">{{ stats.low_stock_count }} Low / {{ stats.expiring_soon_count }} Exp</div>
+        <div class="text-lg font-bold text-violet-400 font-mono">{{ stats.total_doctors_count }} Doctors</div>
+        <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ stats.panel_hospitals_count }} Panel Hospitals</div>
       </div>
-      <div class="text-[10px] text-slate-500 mt-1">Inventory Valuation</div>
+      <div class="text-[10px] text-slate-500 mt-1">Consultant Network</div>
     </div>
 
     <div class="bg-slate-900/80 border border-blue-500/20 rounded-xl p-3.5 flex flex-col justify-between shadow-sm">

@@ -7,8 +7,6 @@ from .visits import *
 from .claims import *
 from .bills import *
 from .finance import *
-from .inventory import *
-from .procurement import *
 from .reports import *
 from .search import *
 from .users import *

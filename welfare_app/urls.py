@@ -111,36 +111,7 @@ urlpatterns = [
     path('approvals/', views.claim_list, name='approval_list'),
 
     # ============================================================
-    # Inventory / Medicines
-    # ============================================================
-    path('medicines/', views.medicine_list, name='medicine_list'),
-    path('medicines/create/', views.medicine_create, name='medicine_create'),
-    path('medicines/<int:pk>/edit/', views.medicine_update, name='medicine_update'),
-    path('medicines/<int:pk>/delete/', views.medicine_delete, name='medicine_delete'),
-    path('stock/', views.stock_transactions, name='stock_transactions'),
-    path('stock/in/', views.stock_in, name='stock_in'),
-    path('stock/out/', views.stock_out, name='stock_out'),
-
-    # ============================================================
-    # Procurement
-    # ============================================================
-    path('suppliers/', views.supplier_list, name='supplier_list'),
-    path('suppliers/create/', views.supplier_create, name='supplier_create'),
-    path('suppliers/<int:pk>/edit/', views.supplier_update, name='supplier_update'),
-    path('suppliers/<int:pk>/delete/', views.supplier_delete, name='supplier_delete'),
-    path('purchase-requests/', views.purchase_request_list, name='purchase_request_list'),
-    path('purchase-requests/create/', views.purchase_request_create, name='purchase_request_create'),
-    path('purchase-requests/<int:pk>/edit/', views.purchase_request_update, name='purchase_request_update'),
-    path('purchase-requests/<int:pk>/delete/', views.purchase_request_delete, name='purchase_request_delete'),
-    path('purchase-requests/<int:pk>/approve/', views.purchase_request_approve, name='purchase_request_approve'),
-    path('purchase-orders/', views.purchase_order_list, name='purchase_order_list'),
-    path('purchase-orders/create/', views.purchase_order_create, name='purchase_order_create'),
-    path('purchase-orders/<int:pk>/edit/', views.purchase_order_update, name='purchase_order_update'),
-    path('purchase-orders/<int:pk>/delete/', views.purchase_order_delete, name='purchase_order_delete'),
-    path('purchase-orders/<int:pk>/status/', views.purchase_order_status, name='purchase_order_status'),
-
-    # ============================================================
-    # Reports & Analytics (16 categories + Exporter)
+    # Reports & Analytics
     # ============================================================
     path('reports/', views.report_index, name='report_index'),
     path('reports/employees/', views.employee_report, name='employee_report'),
@@ -148,16 +119,12 @@ urlpatterns = [
     path('reports/hospitals/', views.hospital_report, name='hospital_report'),
     path('reports/claims/', views.claim_report, name='claim_report'),
     path('reports/budget/', views.budget_report, name='budget_report'),
-    path('reports/inventory/', views.inventory_report, name='inventory_report'),
     path('reports/doctors/', views.doctor_report, name='doctor_report'),
     path('reports/visits/', views.visit_report, name='visit_report'),
     path('reports/bills/', views.bill_report, name='bill_report'),
     path('reports/finance/', views.finance_report, name='finance_report'),
     path('reports/approvals/', views.approval_report, name='approval_report'),
-    path('reports/procurement/', views.procurement_report, name='procurement_report'),
     path('reports/dependents/', views.dependent_report, name='dependent_report'),
-    path('reports/expiry/', views.expiry_report, name='expiry_report'),
-    path('reports/suppliers/', views.supplier_report, name='supplier_report'),
     path('reports/audit-summary/', views.audit_summary_report, name='audit_summary_report'),
     path('reports/export/<str:report_type>/', views.export_report, name='export_report'),
 

@@ -18,7 +18,7 @@
         <i data-lucide="search" class="w-7 h-7 text-blue-600"></i>
         Search Results for <span class="text-blue-600 font-mono">"{{ q }}"</span>
       </h1>
-      <p class="text-xs text-slate-500 mt-1">Found <strong class="text-slate-800">{{ total_results }}</strong> matching records across employees, claims, hospitals, medicines, bills, and budgets.</p>
+      <p class="text-xs text-slate-500 mt-1">Found <strong class="text-slate-800">{{ total_results }}</strong> matching records across employees, claims, hospitals, doctors, visits, bills, and budgets.</p>
     </div>
 
     <!-- Search Form -->
@@ -67,16 +67,6 @@
       <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
       <span>Hospitals</span>
       <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.hospitals }}</span>
-    </button>
-    {% endif %}
-
-    {% if counts.medicines %}
-    <button @click="currentTab = 'medicines'" 
-            :class="currentTab === 'medicines' ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400 font-bold' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'"
-            class="px-3.5 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-colors flex items-center gap-2">
-      <i data-lucide="pill" class="w-3.5 h-3.5"></i>
-      <span>Pharmacy Medicines</span>
-      <span class="px-1.5 py-0.2 rounded-full bg-slate-800 font-mono text-[10px]">{{ counts.medicines }}</span>
     </button>
     {% endif %}
 
@@ -205,44 +195,13 @@
     </div>
     {% endif %}
 
-    <!-- 4. Pharmacy Medicines Section -->
-    {% if results.medicines %}
-    <div x-show="currentTab === 'all' || currentTab === 'medicines'" class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-          <i data-lucide="pill" class="w-4 h-4"></i>
-          Matched Pharmacy Medicines & Inventory ({{ counts.medicines }})
-        </h2>
-        <a href="{% url 'medicine_list' %}?q={{ q }}" class="text-xs text-slate-400 hover:text-white font-semibold">View All &rarr;</a>
-      </div>
-      <div class="divide-y divide-slate-800/60 text-xs">
-        {% for med in results.medicines %}
-        <div class="p-4 hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-white">{{ med.name }}</span>
-              <span class="text-[10px] text-slate-400 font-mono">({{ med.generic_name|default:med.category }})</span>
-            </div>
-            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
-              Batch: {{ med.batch_number|default:'N/A' }} | In-Stock: {{ med.quantity }} {{ med.unit }} | Cost: Rs. {{ med.unit_cost|floatformat:0 }}
-            </div>
-          </div>
-          <a href="{% url 'medicine_update' med.pk %}" class="px-3 py-1 rounded bg-slate-800 text-cyan-400 hover:bg-cyan-600 hover:text-white text-xs font-semibold transition">
-            View Medicine
-          </a>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
     <!-- Empty State -->
     {% if total_results == 0 %}
     <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-12 text-center text-slate-500">
       <i data-lucide="search-x" class="w-12 h-12 mx-auto text-slate-600 mb-3"></i>
       <p class="text-base font-bold text-white">No records found for "{{ q }}"</p>
       <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-        Try searching by employee name, employee PL#, claim number, hospital name, medicine brand name, or invoice number.
+        Try searching by employee name, employee PL#, claim number, hospital name, doctor name, or invoice number.
       </p>
     </div>
     {% endif %}

@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from ..models import (
     Employee, Dependent, MedicalRecord, Hospital, Doctor,
-    HospitalVisit, MedicalClaim, Bill, Budget, Medicine,
+    HospitalVisit, MedicalClaim, Bill, Budget,
     ApprovalWorkflow, ClaimPayment
 )
 from ..forms.employee_forms import EmployeeForm
@@ -67,11 +67,8 @@ def dashboard(request):
     # 11. Hospital Visits Count
     hospital_visits_count = HospitalVisit.objects.count()
 
-    # 12. Low Stock / Critical Medicines Count
-    low_stock_count = Medicine.objects.filter(
-        quantity__lte=F('min_stock_level'),
-        is_active=True
-    ).count()
+    # 12. Direct Medical & Vendor Bills Count
+    total_bills_count = Bill.objects.count()
 
     # Additional Supporting Metrics
     rejected_claims_count = MedicalClaim.objects.filter(claim_status='Rejected').count()
@@ -305,7 +302,8 @@ def dashboard(request):
         'total_hospitals_count': total_hospitals_count,
         'total_doctors_count': total_doctors_count,
         'hospital_visits_count': hospital_visits_count,
-        'low_stock_count': low_stock_count,
+        'total_bills_count': total_bills_count,
+        'low_stock_count': 0,
 
         # Auxiliary KPIs
         'approved_claims_count': approved_claims_count,

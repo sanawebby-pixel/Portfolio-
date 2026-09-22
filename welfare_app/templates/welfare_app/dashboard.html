@@ -272,25 +272,25 @@
             </div>
         </div>
 
-        <!-- KPI 11: Critical Pharmacy / Medicine Alerts -->
-        <div class="bg-slate-900/90 border {% if low_stock_count > 0 %}border-rose-500/40{% else %}border-slate-800{% endif %} rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
+        <!-- KPI 11: Direct Medical & Vendor Bills -->
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-4 transition-all duration-200 shadow-sm relative overflow-hidden group">
             <div class="flex items-start justify-between">
                 <div>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pharmacy Stock Alert</span>
-                    <div class="text-2xl font-bold {% if low_stock_count > 0 %}text-rose-400{% else %}text-emerald-400{% endif %} font-mono mt-1">
-                        {{ low_stock_count }}
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Direct Medical Bills</span>
+                    <div class="text-2xl font-bold text-emerald-400 font-mono mt-1">
+                        {{ total_bills_count }}
                     </div>
                     <div class="text-[11px] text-slate-400 mt-1 font-medium">
-                        {% if low_stock_count > 0 %}Items Below Safety Threshold{% else %}Pharmacy Inventory Healthy{% endif %}
+                        Hospital & Vendor Invoices
                     </div>
                 </div>
-                <div class="w-10 h-10 rounded-xl {% if low_stock_count > 0 %}bg-rose-500/10 border border-rose-500/20 text-rose-400 animate-pulse{% else %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-400{% endif %} flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i data-lucide="pill" class="w-5 h-5"></i>
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
                 </div>
             </div>
             <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <a href="{% url 'medicine_list' %}" class="{% if low_stock_count > 0 %}text-rose-400{% else %}text-emerald-400{% endif %} hover:underline">Manage Inventory &rarr;</a>
-                <span>Re-order trigger</span>
+                <a href="{% url 'bill_list' %}" class="text-emerald-400 hover:underline">Manage Invoices &rarr;</a>
+                <span>Direct Billing</span>
             </div>
         </div>
 

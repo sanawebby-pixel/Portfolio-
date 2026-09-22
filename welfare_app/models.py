@@ -160,6 +160,8 @@ class Dependent(models.Model):
         ('Daughter', 'Daughter'),
         ('Father', 'Father'),
         ('Mother', 'Mother'),
+        ('Brother', 'Brother'),
+        ('Sister', 'Sister'),
         ('Other', 'Other'),
     ]
     STATUS_CHOICES = [

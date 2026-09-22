@@ -396,6 +396,93 @@ class CoreMedicalOperationsTests(TestCase):
         # Verify row 4 was created
         self.assertTrue(visit.expense_items.filter(title='Post-Op Antibiotics & Pharmacy').exists())
 
+    def test_employee_mandatory_validation(self):
+        from welfare_app.forms.employee_forms import FullEmployeeForm
+
+        # 1. Empty Form must be invalid
+        empty_form = FullEmployeeForm(data={})
+        self.assertFalse(empty_form.is_valid())
+        mandatory_fields = [
+            'pl_number', 'name', 'father_name', 'cnic', 'date_of_birth',
+            'gender', 'department', 'designation', 'joined_date',
+            'employment_type', 'employment_status', 'basic_salary',
+            'contact_number', 'address', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relation'
+        ]
+        for field in mandatory_fields:
+            self.assertIn(field, empty_form.errors, f"Field '{field}' should have validation error when empty")
+
+        # 2. Invalid CNIC format (< 13 digits)
+        invalid_data = {
+            'pl_number': 'PL-99999',
+            'name': 'Test User',
+            'father_name': 'Test Father',
+            'cnic': '12345',  # invalid
+            'date_of_birth': '1990-01-01',
+            'gender': 'Male',
+            'department': 'Mechanical Assembly',
+            'designation': 'Technician',
+            'joined_date': '2023-01-01',
+            'employment_type': 'Permanent',
+            'employment_status': 'Active',
+            'basic_salary': '50000',
+            'contact_number': '03001234567',
+            'address': 'Street 1, Islamabad',
+            'emergency_contact_name': 'Father',
+            'emergency_contact_phone': '03007654321',
+            'emergency_contact_relation': 'Father'
+        }
+        form_invalid_cnic = FullEmployeeForm(data=invalid_data)
+        self.assertFalse(form_invalid_cnic.is_valid())
+        self.assertIn('cnic', form_invalid_cnic.errors)
+
+        # 3. Valid submission succeeds
+        valid_data = invalid_data.copy()
+        valid_data['cnic'] = '37405-1234567-9'
+        form_valid = FullEmployeeForm(data=valid_data)
+        self.assertTrue(form_valid.is_valid(), form_valid.errors.as_text())
+        saved_emp = form_valid.save()
+        self.assertEqual(saved_emp.pl_number, 'PL-99999')
+        self.assertEqual(saved_emp.cnic, '37405-1234567-9')
+
+    def test_dependent_relationships_include_brother_and_sister(self):
+        # 1. Verify choices in model
+        relation_keys = [c[0] for c in Dependent.RELATION_CHOICES]
+        self.assertIn('Brother', relation_keys)
+        self.assertIn('Sister', relation_keys)
+
+        # 2. Create Brother dependent
+        brother = Dependent.objects.create(
+            employee=self.emp,
+            name='Ali Ahmed',
+            relationship='Brother',
+            gender='Male',
+            date_of_birth='2005-06-15',
+            status='Active'
+        )
+        self.assertEqual(brother.relationship, 'Brother')
+
+        # 3. Create Sister dependent
+        sister = Dependent.objects.create(
+            employee=self.emp,
+            name='Zainab Ahmed',
+            relationship='Sister',
+            gender='Female',
+            date_of_birth='2008-09-20',
+            status='Active'
+        )
+        self.assertEqual(sister.relationship, 'Sister')
+
+    def test_inventory_and_supply_module_removed(self):
+        # 1. Base navigation should not have Inventory & Supply
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn('Inventory & Supply', content)
+        self.assertNotIn('href="/inventory/', content)
+        self.assertNotIn('href="/procurement/', content)
+
+
 
 
 

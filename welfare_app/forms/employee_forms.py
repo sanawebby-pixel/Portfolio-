@@ -143,6 +143,20 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
             'profile_picture': forms.ClearableFileInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        mandatory_fields = [
+            'pl_number', 'name', 'father_name', 'cnic', 'date_of_birth',
+            'gender', 'department', 'designation', 'joined_date',
+            'employment_type', 'employment_status', 'basic_salary',
+            'contact_number', 'address', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relation'
+        ]
+        for field_name in mandatory_fields:
+            if field_name in self.fields:
+                self.fields[field_name].required = True
+                self.fields[field_name].widget.attrs['required'] = 'required'
+
     def clean_pl_number(self):
         pl = self.cleaned_data.get('pl_number', '').strip().upper()
         if not pl:
@@ -156,15 +170,43 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
         return pl
 
     def clean_cnic(self):
-        cnic = self.cleaned_data.get('cnic')
-        if cnic:
-            cnic = cnic.strip()
-            qs = Employee.objects.filter(cnic=cnic)
-            if self.instance and self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise forms.ValidationError(f'An employee with CNIC "{cnic}" already exists.')
+        import re
+        cnic = (self.cleaned_data.get('cnic') or '').strip()
+        if not cnic:
+            raise forms.ValidationError('CNIC / National Identity Card Number is mandatory.')
+        digits = re.sub(r'\D', '', cnic)
+        if len(digits) != 13:
+            raise forms.ValidationError('CNIC must be a valid 13-digit identity number (e.g. 37405-1234567-1).')
+        qs = Employee.objects.filter(cnic=cnic)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f'An employee with CNIC "{cnic}" already exists.')
         return cnic
+
+    def clean_basic_salary(self):
+        salary = self.cleaned_data.get('basic_salary')
+        if salary is None:
+            raise forms.ValidationError('Basic Monthly Salary is mandatory.')
+        if salary <= 0:
+            raise forms.ValidationError('Basic Monthly Salary must be greater than 0.')
+        return salary
+
+    def clean_contact_number(self):
+        phone = (self.cleaned_data.get('contact_number') or '').strip()
+        if not phone:
+            raise forms.ValidationError('Contact / Mobile Number is mandatory.')
+        if len(phone) < 7:
+            raise forms.ValidationError('Please enter a valid mobile / contact number.')
+        return phone
+
+    def clean_emergency_contact_phone(self):
+        phone = (self.cleaned_data.get('emergency_contact_phone') or '').strip()
+        if not phone:
+            raise forms.ValidationError('Emergency Contact Phone Number is mandatory.')
+        if len(phone) < 7:
+            raise forms.ValidationError('Please enter a valid emergency phone number.')
+        return phone
 
 
 class DependentForm(TailwindMixin, forms.ModelForm):

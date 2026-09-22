@@ -2,8 +2,7 @@ from django.contrib import admin
 from .models import (
     Department, BenefitRule, Employee, Dependent, Hospital, Doctor, HospitalVisit, VisitExpenseItem,
     MedicalRecord, MedicalClaim, ClaimExpenseItem, ApprovalWorkflow, ClaimPayment,
-    Bill, Budget, FinanceTransaction, Medicine, MedicineTransaction,
-    Supplier, PurchaseRequest, PurchaseOrder, Document, Notification,
+    Bill, Budget, FinanceTransaction, Document, Notification,
     AuditLog, UserProfile
 )
 
@@ -182,42 +181,6 @@ class FinanceTransactionAdmin(admin.ModelAdmin):
     date_hierarchy = 'date'
 
 
-@admin.register(Supplier)
-class SupplierAdmin(admin.ModelAdmin):
-    list_display = ('supplier_id', 'name', 'contact_person', 'contact_number', 'email', 'category', 'status')
-    search_fields = ('supplier_id', 'name', 'contact_person', 'email', 'contact_number')
-    list_filter = ('status', 'category')
-
-
-@admin.register(Medicine)
-class MedicineAdmin(admin.ModelAdmin):
-    list_display = ('medicine_id', 'name', 'generic_name', 'category', 'unit', 'unit_cost', 'quantity', 'min_stock_level', 'expiry_date', 'is_active')
-    search_fields = ('medicine_id', 'name', 'generic_name', 'batch_number', 'manufacturer')
-    list_filter = ('category', 'unit', 'is_active', 'expiry_date')
-
-
-@admin.register(MedicineTransaction)
-class MedicineTransactionAdmin(admin.ModelAdmin):
-    list_display = ('medicine', 'transaction_type', 'quantity', 'reference', 'date', 'created_by')
-    search_fields = ('medicine__name', 'reference')
-    list_filter = ('transaction_type', 'date')
-    date_hierarchy = 'date'
-
-
-@admin.register(PurchaseRequest)
-class PurchaseRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'requester', 'department', 'item_name', 'estimated_amount', 'priority', 'status', 'created_at')
-    search_fields = ('request_number', 'item_name', 'requester__username')
-    list_filter = ('status', 'priority', 'created_at')
-    readonly_fields = ('request_number',)
-
-
-@admin.register(PurchaseOrder)
-class PurchaseOrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'supplier', 'total_amount', 'status', 'payment_status', 'expected_delivery', 'created_at')
-    search_fields = ('order_number', 'supplier__name')
-    list_filter = ('status', 'payment_status', 'created_at')
-    readonly_fields = ('order_number',)
 
 
 @admin.register(Document)

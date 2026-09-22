@@ -9,8 +9,8 @@ from django.utils import timezone
 from ..models import (
     Employee, Dependent, MedicalRecord, Hospital, Doctor, HospitalVisit,
     MedicalClaim, ClaimExpenseItem, ApprovalWorkflow, ClaimPayment,
-    Bill, Budget, FinanceTransaction, Medicine, MedicineTransaction,
-    Supplier, PurchaseRequest, PurchaseOrder, AuditLog, Department, BenefitRule
+    Bill, Budget, FinanceTransaction,
+    AuditLog, Department, BenefitRule
 )
 
 
@@ -64,12 +64,8 @@ def report_index(request):
     total_dependents = Dependent.objects.filter(status='Active').count()
 
     total_budget_allocated = Budget.objects.filter(year=current_year, is_active=True).aggregate(t=Sum('allocated_amount'))['t'] or 0
-    
-    # Calculate stock valuation
-    medicines = Medicine.objects.filter(is_active=True)
-    stock_value = sum(m.stock_value for m in medicines)
-    low_stock_count = sum(1 for m in medicines if m.is_low_stock)
-    expiring_soon_count = sum(1 for m in medicines if m.is_expiring_soon or m.is_expired)
+    total_bills_count = Bill.objects.count()
+    total_doctors_count = Doctor.objects.filter(status='Active').count()
 
     panel_hospitals_count = Hospital.objects.filter(status='Active', panel_status='Panel').count()
     total_visits = HospitalVisit.objects.count()
@@ -84,9 +80,8 @@ def report_index(request):
         'total_employees': total_employees,
         'total_dependents': total_dependents,
         'total_budget_allocated': float(total_budget_allocated),
-        'stock_value': stock_value,
-        'low_stock_count': low_stock_count,
-        'expiring_soon_count': expiring_soon_count,
+        'total_bills_count': total_bills_count,
+        'total_doctors_count': total_doctors_count,
         'panel_hospitals_count': panel_hospitals_count,
         'total_visits': total_visits,
         'total_bills_pending': float(total_bills_pending),
@@ -210,44 +205,8 @@ def report_index(request):
             ]
         },
         {
-            'category': 'Pharmacy, Procurement & Governance',
+            'category': 'System Audit & Governance',
             'reports': [
-                {
-                    'id': 'inventory',
-                    'title': 'Pharmacy Stock & Valuation',
-                    'url_name': 'inventory_report',
-                    'icon': 'pill',
-                    'color': 'teal',
-                    'description': 'Medicine inventory quantities, batch balances, stock valuation, and reorder levels.',
-                    'metrics': f"Rs. {stock_value:,.0f} Valuation",
-                },
-                {
-                    'id': 'expiry',
-                    'title': 'Medicine Expiry & Low Stock Alert',
-                    'url_name': 'expiry_report',
-                    'icon': 'alert-triangle',
-                    'color': 'rose',
-                    'description': 'Near-expiry batches (30/60/90 days), expired stock quarantine, and restock alerts.',
-                    'metrics': f"{low_stock_count + expiring_soon_count} Action Alerts",
-                },
-                {
-                    'id': 'procurement',
-                    'title': 'Procurement & Purchase Orders',
-                    'url_name': 'procurement_report',
-                    'icon': 'shopping-cart',
-                    'color': 'amber',
-                    'description': 'Purchase requisitions status, vendor PO fulfillment, and procurement cycle times.',
-                    'metrics': 'Supply Pipeline',
-                },
-                {
-                    'id': 'suppliers',
-                    'title': 'Supplier Spend & Vendor Analysis',
-                    'url_name': 'supplier_report',
-                    'icon': 'truck',
-                    'color': 'slate',
-                    'description': 'Spend per supplier, contracted payment terms, and delivery performance.',
-                    'metrics': 'Vendor Directory',
-                },
                 {
                     'id': 'audit_summary',
                     'title': 'System Audit & Security Activity',

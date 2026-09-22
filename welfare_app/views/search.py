@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from ..models import (
     Employee, Hospital, Doctor, MedicalClaim, HospitalVisit,
-    Bill, Medicine, Supplier, PurchaseRequest, PurchaseOrder, Budget
+    Bill, Budget
 )
 
 
@@ -20,9 +20,6 @@ def global_search(request):
         'doctors': [],
         'visits': [],
         'bills': [],
-        'medicines': [],
-        'suppliers': [],
-        'purchase_orders': [],
         'budgets': [],
     }
     counts = {k: 0 for k in results}
@@ -89,35 +86,6 @@ def global_search(request):
         counts['bills'] = bill_qs.count()
         results['bills'] = bill_qs[:10]
 
-        # 7. Pharmacy Medicines
-        med_qs = Medicine.objects.select_related('supplier').filter(
-            Q(name__icontains=q) |
-            Q(generic_name__icontains=q) |
-            Q(batch_number__icontains=q) |
-            Q(manufacturer__icontains=q) |
-            Q(medicine_id__icontains=q)
-        )
-        counts['medicines'] = med_qs.count()
-        results['medicines'] = med_qs[:10]
-
-        # 8. Suppliers
-        sup_qs = Supplier.objects.filter(
-            Q(name__icontains=q) |
-            Q(supplier_id__icontains=q) |
-            Q(contact_person__icontains=q) |
-            Q(city__icontains=q)
-        )
-        counts['suppliers'] = sup_qs.count()
-        results['suppliers'] = sup_qs[:10]
-
-        # 9. Purchase Orders
-        po_qs = PurchaseOrder.objects.select_related('supplier').filter(
-            Q(order_number__icontains=q) |
-            Q(supplier__name__icontains=q) |
-            Q(items_description__icontains=q)
-        )
-        counts['purchase_orders'] = po_qs.count()
-        results['purchase_orders'] = po_qs[:10]
 
         # 10. Budgets
         budget_qs = Budget.objects.select_related('department').filter(

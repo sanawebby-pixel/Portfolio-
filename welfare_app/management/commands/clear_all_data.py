@@ -94,7 +94,7 @@ class Command(BaseCommand):
                         pass
 
             # Re-create empty media subfolders with .gitkeep
-            for folder in ['employees/photos', 'visits/expenses', 'visits/consultation', 'visits/medicine', 'bills', 'claims', 'finance', 'payments', 'procurement']:
+            for folder in ['employees/photos', 'visits/expenses', 'visits/consultation', 'bills', 'claims', 'finance', 'payments']:
                 folder_path = os.path.join(media_root, folder)
                 os.makedirs(folder_path, exist_ok=True)
                 gitkeep_file = os.path.join(folder_path, '.gitkeep')
