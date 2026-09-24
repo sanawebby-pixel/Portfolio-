@@ -581,6 +581,272 @@ class CoreMedicalOperationsTests(TestCase):
         self.assertTrue(bill.attachments.filter(description='Surgeon Specialist Fee Voucher').exists())
 
 
+class MedicalClaimAndCNICValidationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_superuser(
+            username='welfare_admin',
+            email='welfare_admin@factory.org',
+            password='password123'
+        )
+        self.profile, _ = UserProfile.objects.get_or_create(
+            user=self.user,
+            defaults={'role': 'Admin'}
+        )
+        self.client.force_login(self.user)
+
+        self.dept = Department.objects.create(name='Operations & Maintenance', code='OPS-01', is_active=True)
+        self.emp = Employee.objects.create(
+            pl_number='PL-99001',
+            name='Hamza Tariq',
+            department='Operations & Maintenance',
+            cnic='37405-1111111-1',
+            employment_status='Active'
+        )
+        self.dep = Dependent.objects.create(
+            employee=self.emp,
+            name='Ayesha Hamza',
+            relationship='Spouse',
+            cnic_bform='37405-2222222-2',
+            medical_eligible=True,
+            status='Active'
+        )
+        self.hospital = Hospital.objects.create(
+            name='Rawalpindi General Hospital',
+            hospital_code='RGH-001',
+            hospital_type='Private',
+            city='Rawalpindi',
+            panel_status='Panel',
+            status='Active'
+        )
+        self.doctor = Doctor.objects.create(
+            name='Dr. Asim Siddiqui',
+            specialization='General Physician',
+            hospital=self.hospital,
+            status='Active'
+        )
+
+    def test_claim_creation_without_payment_status_and_defaults(self):
+        """Test Requirement 2: Claims save successfully without payment_status error and default safely."""
+        claim_data = {
+            'employee': self.emp.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'claim_type': 'OPD Consultation',
+            'claim_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'treatment_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'diagnosis': 'Seasonal Flu & Pharyngitis',
+            'bill_number': 'INV-FLU-001',
+            'bill_date': datetime.date.today().strftime('%Y-%m-%d'),
+            # Note: payment_status intentionally omitted from POST
+            'claim_status': 'Pending',
+            'employee_contribution': '0.00',
+        }
+        res = self.client.post(reverse('claim_create'), claim_data)
+        self.assertEqual(res.status_code, 302)
+        
+        claim = MedicalClaim.objects.filter(bill_number='INV-FLU-001').first()
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim.payment_status, 'Unpaid')
+        self.assertEqual(claim.claim_status, 'Pending')
+
+    def test_dynamic_itemized_claim_expenses_and_auto_calculations(self):
+        """Test Requirement 1: Dynamic itemized expenses save to ClaimExpenseItem and calculate totals."""
+        claim_data = {
+            'employee': self.emp.pk,
+            'dependent': self.dep.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'claim_type': 'Diagnostic / Lab Tests',
+            'claim_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'treatment_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'diagnosis': 'Comprehensive Health Screening',
+            'bill_number': 'INV-SCREEN-550',
+            'bill_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'employee_contribution': '2000.00',
+            'payment_status': 'Unpaid',
+            'claim_status': 'Pending',
+            # Dynamic itemized rows
+            'expense_item_title': [
+                'Specialist Consultant Doctor Fee',
+                'Abdominal Ultrasound Screening',
+                'Prescription Pharmacy Medication'
+            ],
+            'expense_item_cost': [
+                '3500.00',
+                '6500.00',
+                '4000.00'
+            ]
+        }
+        res = self.client.post(reverse('claim_create'), claim_data)
+        self.assertEqual(res.status_code, 302)
+
+        claim = MedicalClaim.objects.get(bill_number='INV-SCREEN-550')
+        # Total = 3500 + 6500 + 4000 = 14,000
+        self.assertEqual(float(claim.total_bill_amount), 14000.00)
+        # Claimable = 14,000 - 2,000 = 12,000
+        self.assertEqual(float(claim.claimable_amount), 12000.00)
+        # Welfare contribution = 12,000
+        self.assertEqual(float(claim.welfare_contribution), 12000.00)
+
+        # Verify ClaimExpenseItem rows
+        items = ClaimExpenseItem.objects.filter(claim=claim).order_by('id')
+        self.assertEqual(items.count(), 3)
+        self.assertEqual(items[0].category, 'Specialist Consultant Doctor Fee')
+        self.assertEqual(float(items[0].amount), 3500.00)
+        self.assertEqual(items[1].category, 'Abdominal Ultrasound Screening')
+        self.assertEqual(float(items[1].amount), 6500.00)
+        self.assertEqual(items[2].category, 'Prescription Pharmacy Medication')
+        self.assertEqual(float(items[2].amount), 4000.00)
+
+        # Test updating claim with modified dynamic rows
+        update_data = {
+            'employee': self.emp.pk,
+            'dependent': self.dep.pk,
+            'hospital': self.hospital.pk,
+            'doctor': self.doctor.pk,
+            'claim_type': 'Diagnostic / Lab Tests',
+            'claim_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'treatment_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'diagnosis': 'Comprehensive Health Screening - Verified',
+            'bill_number': 'INV-SCREEN-550',
+            'bill_date': datetime.date.today().strftime('%Y-%m-%d'),
+            'employee_contribution': '1500.00',
+            'payment_status': 'Unpaid',
+            'claim_status': 'Pending',
+            'expense_item_title': [
+                'Specialist Consultant Doctor Fee',
+                'Advanced MRI Brain'
+            ],
+            'expense_item_cost': [
+                '4000.00',
+                '16000.00'
+            ]
+        }
+        res_update = self.client.post(reverse('claim_update', args=[claim.pk]), update_data)
+        self.assertEqual(res_update.status_code, 302)
+
+        claim.refresh_from_db()
+        # Total = 4000 + 16000 = 20,000
+        self.assertEqual(float(claim.total_bill_amount), 20000.00)
+        # Claimable = 20000 - 1500 = 18,500
+        self.assertEqual(float(claim.claimable_amount), 18500.00)
+        self.assertEqual(float(claim.welfare_contribution), 18500.00)
+        self.assertEqual(ClaimExpenseItem.objects.filter(claim=claim).count(), 2)
+
+    def test_strict_cross_table_cnic_validation(self):
+        """Test Requirement 3: Cross-table CNIC duplicate prevention across Employee and Dependent."""
+        from welfare_app.forms.employee_forms import FullEmployeeForm, DependentForm
+
+        # 1. New Employee with CNIC matching an existing Employee
+        form1 = FullEmployeeForm(data={
+            'pl_number': 'PL-99002',
+            'name': 'Duplicate Emp Test',
+            'father_name': 'Test Father',
+            'cnic': '37405-1111111-1',  # Matches self.emp.cnic
+            'date_of_birth': '1990-01-01',
+            'gender': 'Male',
+            'contact_number': '+92 300 1111111',
+            'address': 'Islamabad',
+            'department': 'Operations & Maintenance',
+            'designation': 'Technician',
+            'joined_date': '2024-01-01',
+            'employment_type': 'Permanent',
+            'employment_status': 'Active',
+            'basic_salary': '50000.00',
+            'emergency_contact_name': 'Emergency Contact',
+            'emergency_contact_phone': '+92 321 1111111',
+            'emergency_contact_relation': 'Brother',
+        })
+        self.assertFalse(form1.is_valid())
+        self.assertIn('cnic', form1.errors)
+        self.assertEqual(form1.errors['cnic'][0], 'CNIC already exists. Duplicate entries are not allowed.')
+
+        # 2. New Employee with CNIC matching an existing Dependent (Family Member)
+        form2 = FullEmployeeForm(data={
+            'pl_number': 'PL-99003',
+            'name': 'Duplicate From Dependent Test',
+            'father_name': 'Test Father',
+            'cnic': '37405-2222222-2',  # Matches self.dep.cnic_bform
+            'date_of_birth': '1990-01-01',
+            'gender': 'Female',
+            'contact_number': '+92 300 2222222',
+            'address': 'Islamabad',
+            'department': 'Operations & Maintenance',
+            'designation': 'Technician',
+            'joined_date': '2024-01-01',
+            'employment_type': 'Permanent',
+            'employment_status': 'Active',
+            'basic_salary': '50000.00',
+            'emergency_contact_name': 'Emergency Contact',
+            'emergency_contact_phone': '+92 321 2222222',
+            'emergency_contact_relation': 'Spouse',
+        })
+        self.assertFalse(form2.is_valid())
+        self.assertIn('cnic', form2.errors)
+        self.assertEqual(form2.errors['cnic'][0], 'CNIC already exists. Duplicate entries are not allowed.')
+
+        # 3. New Dependent with CNIC matching an existing Dependent
+        form3 = DependentForm(data={
+            'name': 'Duplicate Dep Test',
+            'relationship': 'Son',
+            'gender': 'Male',
+            'cnic_bform': '37405-2222222-2',  # Matches self.dep.cnic_bform
+            'medical_eligible': True,
+            'status': 'Active'
+        })
+        self.assertFalse(form3.is_valid())
+        self.assertIn('cnic_bform', form3.errors)
+        self.assertEqual(form3.errors['cnic_bform'][0], 'CNIC already exists. Duplicate entries are not allowed.')
+
+        # 4. New Dependent with CNIC matching an existing Employee
+        form4 = DependentForm(data={
+            'name': 'Duplicate From Employee Test',
+            'relationship': 'Son',
+            'gender': 'Male',
+            'cnic_bform': '37405-1111111-1',  # Matches self.emp.cnic
+            'medical_eligible': True,
+            'status': 'Active'
+        })
+        self.assertFalse(form4.is_valid())
+        self.assertIn('cnic_bform', form4.errors)
+        self.assertEqual(form4.errors['cnic_bform'][0], 'CNIC already exists. Duplicate entries are not allowed.')
+
+        # 5. Updating existing Employee with their own CNIC is valid
+        form5 = FullEmployeeForm(data={
+            'pl_number': self.emp.pl_number,
+            'name': self.emp.name,
+            'father_name': 'Tariq Mehmood',
+            'cnic': self.emp.cnic,
+            'date_of_birth': '1990-01-01',
+            'gender': 'Male',
+            'contact_number': '+92 300 9999999',
+            'address': 'Islamabad Office Colony',
+            'department': 'Operations & Maintenance',
+            'designation': 'Senior Technician',
+            'joined_date': '2024-01-01',
+            'employment_type': 'Permanent',
+            'employment_status': 'Active',
+            'basic_salary': '60000.00',
+            'emergency_contact_name': 'Contact Person',
+            'emergency_contact_phone': '+92 321 9999999',
+            'emergency_contact_relation': 'Father',
+        }, instance=self.emp)
+        self.assertTrue(form5.is_valid(), f"Errors: {form5.errors}")
+
+        # 6. Updating existing Dependent with their own CNIC is valid
+        form6 = DependentForm(data={
+            'name': self.dep.name,
+            'relationship': self.dep.relationship,
+            'gender': 'Female',
+            'cnic_bform': self.dep.cnic_bform,
+            'medical_eligible': True,
+            'status': 'Active'
+        }, instance=self.dep)
+        self.assertTrue(form6.is_valid(), f"Errors: {form6.errors}")
+
+
+
 
 
 

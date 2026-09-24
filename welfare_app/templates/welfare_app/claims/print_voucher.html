@@ -262,6 +262,15 @@
                         <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ claim.other_fee|floatformat:2 }}</td>
                     </tr>
                     {% endif %}
+
+                    {% for item in claim.expense_items.all %}
+                    <tr>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-center font-mono">{{ forloop.counter|stringformat:"02d" }}</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 font-semibold">{{ item.category }}</td>
+                        <td class="py-1.5 px-3 border-r border-slate-200 text-slate-600">{{ item.description|default:"Itemized Medical Expense" }}</td>
+                        <td class="py-1.5 px-3 text-right font-mono font-bold">Rs. {{ item.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
                 <tfoot class="border-t-2 border-slate-800 bg-slate-50 font-bold text-xs">
                     <tr>

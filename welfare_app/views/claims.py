@@ -94,8 +94,55 @@ def claim_detail(request, pk):
     return render(request, 'welfare_app/claims/detail.html', context)
 
 
+from decimal import Decimal
+
+
+def save_claim_expense_items(claim, request):
+    """Save dynamic itemized expense rows submitted from the claim form."""
+    titles = request.POST.getlist('expense_item_title')
+    costs = request.POST.getlist('expense_item_cost')
+    if not titles:
+        titles = request.POST.getlist('expense_item_title[]')
+    if not costs:
+        costs = request.POST.getlist('expense_item_cost[]')
+
+    if titles is not None and costs is not None and len(titles) > 0:
+        ClaimExpenseItem.objects.filter(claim=claim).delete()
+        total_sum = Decimal('0.00')
+        has_items = False
+
+        for title, cost_str in zip(titles, costs):
+            title = (title or '').strip()
+            cost_str = (cost_str or '').strip()
+            if not title and not cost_str:
+                continue
+            try:
+                cost = Decimal(cost_str) if cost_str else Decimal('0.00')
+            except Exception:
+                cost = Decimal('0.00')
+
+            ClaimExpenseItem.objects.create(
+                claim=claim,
+                category=title or 'Medical Expense',
+                description=title or 'Medical Expense',
+                amount=cost,
+                eligible_amount=cost,
+                approved_amount=cost
+            )
+            total_sum += cost
+            has_items = True
+
+        if has_items:
+            claim.total_bill_amount = total_sum
+            emp_co = claim.employee_contribution or Decimal('0.00')
+            claim.claimable_amount = max(Decimal('0.00'), total_sum - emp_co)
+            claim.welfare_contribution = claim.claimable_amount
+            claim.save()
+
+
 @login_required
 def claim_create(request):
+    existing_expenses = []
     if request.method == 'POST':
         form = MedicalClaimForm(request.POST, request.FILES)
         if form.is_valid():
@@ -107,6 +154,7 @@ def claim_create(request):
             if not claim.payment_status:
                 claim.payment_status = 'Unpaid'
             claim.save()
+            save_claim_expense_items(claim, request)
             
             # Record initial submission approval step
             ApprovalWorkflow.objects.create(
@@ -127,6 +175,10 @@ def claim_create(request):
             )
             messages.success(request, f'Medical Claim {claim.claim_number} successfully registered with status "{claim.claim_status}".')
             return redirect('claim_detail', pk=claim.pk)
+        else:
+            titles = request.POST.getlist('expense_item_title') or request.POST.getlist('expense_item_title[]')
+            costs = request.POST.getlist('expense_item_cost') or request.POST.getlist('expense_item_cost[]')
+            existing_expenses = [{'category': t, 'amount': c} for t, c in zip(titles, costs) if t or c]
     else:
         initial_data = {
             'claim_date': timezone.now().date(),
@@ -143,6 +195,7 @@ def claim_create(request):
     return render(request, 'welfare_app/claims/form.html', {
         'form': form,
         'title': 'New Medical Claim Entry',
+        'existing_expenses': existing_expenses,
         'active_nav': 'claims'
     })
 
@@ -155,7 +208,10 @@ def claim_update(request, pk):
         if form.is_valid():
             claim = form.save(commit=False)
             claim.updated_by = request.user
+            if not claim.payment_status:
+                claim.payment_status = 'Unpaid'
             claim.save()
+            save_claim_expense_items(claim, request)
             
             AuditLog.log(
                 user=request.user,
@@ -167,12 +223,18 @@ def claim_update(request, pk):
             )
             messages.success(request, f'Claim {claim.claim_number} has been updated.')
             return redirect('claim_detail', pk=claim.pk)
+        else:
+            titles = request.POST.getlist('expense_item_title') or request.POST.getlist('expense_item_title[]')
+            costs = request.POST.getlist('expense_item_cost') or request.POST.getlist('expense_item_cost[]')
+            existing_expenses = [{'category': t, 'amount': c} for t, c in zip(titles, costs) if t or c]
     else:
         form = MedicalClaimForm(instance=claim)
+        existing_expenses = ClaimExpenseItem.objects.filter(claim=claim).order_by('id')
     
     return render(request, 'welfare_app/claims/form.html', {
         'form': form,
         'claim': claim,
+        'existing_expenses': existing_expenses,
         'title': f'Edit Medical Claim ({claim.claim_number})',
         'active_nav': 'claims'
     })

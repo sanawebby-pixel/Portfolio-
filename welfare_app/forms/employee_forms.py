@@ -171,17 +171,27 @@ class FullEmployeeForm(TailwindMixin, forms.ModelForm):
 
     def clean_cnic(self):
         import re
+        from django.db.models import Q
         cnic = (self.cleaned_data.get('cnic') or '').strip()
         if not cnic:
             raise forms.ValidationError('CNIC / National Identity Card Number is mandatory.')
         digits = re.sub(r'\D', '', cnic)
         if len(digits) != 13:
             raise forms.ValidationError('CNIC must be a valid 13-digit identity number (e.g. 37405-1234567-1).')
-        qs = Employee.objects.filter(cnic=cnic)
+        formatted_cnic = f"{digits[:5]}-{digits[5:12]}-{digits[12]}"
+
+        # 1. Check duplicate in Employee table
+        qs_emp = Employee.objects.filter(Q(cnic__iexact=cnic) | Q(cnic__iexact=formatted_cnic) | Q(cnic__iexact=digits))
         if self.instance and self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise forms.ValidationError(f'An employee with CNIC "{cnic}" already exists.')
+            qs_emp = qs_emp.exclude(pk=self.instance.pk)
+        if qs_emp.exists():
+            raise forms.ValidationError('CNIC already exists. Duplicate entries are not allowed.')
+
+        # 2. Check duplicate in Dependent table
+        qs_dep = Dependent.objects.filter(Q(cnic_bform__iexact=cnic) | Q(cnic_bform__iexact=formatted_cnic) | Q(cnic_bform__iexact=digits))
+        if qs_dep.exists():
+            raise forms.ValidationError('CNIC already exists. Duplicate entries are not allowed.')
+
         return cnic
 
     def clean_basic_salary(self):
@@ -234,3 +244,26 @@ class DependentForm(TailwindMixin, forms.ModelForm):
             'medical_eligible': forms.CheckboxInput(),
             'status': forms.Select(attrs={'class': 'bg-white'}),
         }
+
+    def clean_cnic_bform(self):
+        import re
+        from django.db.models import Q
+        cnic = (self.cleaned_data.get('cnic_bform') or '').strip()
+        if not cnic:
+            return cnic
+        digits = re.sub(r'\D', '', cnic)
+        formatted_cnic = f"{digits[:5]}-{digits[5:12]}-{digits[12]}" if len(digits) == 13 else cnic
+
+        # 1. Check duplicate in Dependent table (excluding self on update)
+        qs_dep = Dependent.objects.filter(Q(cnic_bform__iexact=cnic) | Q(cnic_bform__iexact=formatted_cnic) | Q(cnic_bform__iexact=digits))
+        if self.instance and self.instance.pk:
+            qs_dep = qs_dep.exclude(pk=self.instance.pk)
+        if qs_dep.exists():
+            raise forms.ValidationError('CNIC already exists. Duplicate entries are not allowed.')
+
+        # 2. Check duplicate in Employee table
+        qs_emp = Employee.objects.filter(Q(cnic__iexact=cnic) | Q(cnic__iexact=formatted_cnic) | Q(cnic__iexact=digits))
+        if qs_emp.exists():
+            raise forms.ValidationError('CNIC already exists. Duplicate entries are not allowed.')
+
+        return cnic

@@ -424,8 +424,8 @@ class MedicalClaim(models.Model):
     rejected_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     # Status Workflow (Default is Pending / Unpaid - MUST NEVER default to Paid)
-    claim_status = models.CharField(max_length=50, choices=CLAIM_STATUS_CHOICES, default='Pending')
-    payment_status = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Unpaid')
+    claim_status = models.CharField(max_length=50, choices=CLAIM_STATUS_CHOICES, default='Pending', blank=True)
+    payment_status = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Unpaid', blank=True)
 
     supporting_documents = models.FileField(upload_to='claims/', blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
@@ -440,7 +440,13 @@ class MedicalClaim(models.Model):
         ordering = ['-claim_date', '-created_at']
 
     def calculate_totals(self):
-        self.total_bill_amount = (
+        item_sum = 0
+        if self.pk:
+            res = self.expense_items.aggregate(t=models.Sum('amount'))['t']
+            if res is not None and res > 0:
+                item_sum = res
+
+        static_fee_sum = (
             (self.doctor_fee or 0) +
             (self.doctor_dues or 0) +
             (self.lab_fee or 0) +
@@ -449,8 +455,13 @@ class MedicalClaim(models.Model):
             (self.procedure_fee or 0) +
             (self.other_fee or 0)
         )
+        if item_sum > 0:
+            self.total_bill_amount = item_sum
+        elif not self.total_bill_amount or self.total_bill_amount == 0:
+            self.total_bill_amount = static_fee_sum
+
         if not self.claimable_amount or self.claimable_amount == 0:
-            self.claimable_amount = self.total_bill_amount - (self.employee_contribution or 0)
+            self.claimable_amount = max(0, (self.total_bill_amount or 0) - (self.employee_contribution or 0))
         if not self.welfare_contribution or self.welfare_contribution == 0:
             self.welfare_contribution = self.claimable_amount
 
@@ -472,18 +483,8 @@ class MedicalClaim(models.Model):
 
 # 10. Claim Expense Items
 class ClaimExpenseItem(models.Model):
-    CATEGORY_CHOICES = [
-        ('Doctor Fee', 'Doctor Fee'),
-        ('Doctor Dues', 'Doctor Dues'),
-        ('Laboratory', 'Laboratory / Diagnostic'),
-        ('Medicine', 'Medicine & Pharmacy'),
-        ('Admission', 'Admission / Hospital Stay'),
-        ('Surgery', 'Surgery / Procedure'),
-        ('Other', 'Other Expense'),
-    ]
-
     claim = models.ForeignKey(MedicalClaim, on_delete=models.CASCADE, related_name='expense_items')
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=150, blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     eligible_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

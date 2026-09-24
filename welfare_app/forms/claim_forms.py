@@ -67,7 +67,8 @@ class MedicalClaimForm(TailwindMixin, forms.ModelForm):
             'admission_fee', 'procedure_fee', 'other_fee',
             'total_bill_amount', 'claimable_amount', 'eligible_amount',
             'employee_contribution', 'welfare_contribution', 'approved_amount',
-            'supporting_documents', 'bill_number', 'bill_date', 'diagnosis', 'remarks'
+            'supporting_documents', 'bill_number', 'bill_date', 'diagnosis', 'remarks',
+            'payment_status', 'claim_status'
         ]
         for field_name in fee_fields:
             if field_name in self.fields:
@@ -75,8 +76,10 @@ class MedicalClaimForm(TailwindMixin, forms.ModelForm):
 
         # Default safety: New claims start as Pending and Unpaid
         if not self.instance or not self.instance.pk:
-            self.fields['claim_status'].initial = 'Pending'
-            self.fields['payment_status'].initial = 'Unpaid'
+            if 'claim_status' in self.fields:
+                self.fields['claim_status'].initial = 'Pending'
+            if 'payment_status' in self.fields:
+                self.fields['payment_status'].initial = 'Unpaid'
 
     def clean(self):
         cleaned_data = super().clean()
@@ -89,6 +92,13 @@ class MedicalClaimForm(TailwindMixin, forms.ModelForm):
         for field_name in numeric_fields:
             if field_name in cleaned_data and cleaned_data[field_name] in [None, '']:
                 cleaned_data[field_name] = 0.00
+
+        # Ensure payment_status and claim_status are never empty
+        if not cleaned_data.get('payment_status'):
+            cleaned_data['payment_status'] = getattr(self.instance, 'payment_status', None) or 'Unpaid'
+        if not cleaned_data.get('claim_status'):
+            cleaned_data['claim_status'] = getattr(self.instance, 'claim_status', None) or 'Pending'
+
         return cleaned_data
 
 
